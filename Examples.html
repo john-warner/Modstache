@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="../SSimple/SSimple.js"></script>
+    <script src="SStache.js"></script>
+    <script src="Example.js"></script>
+</head>
+<body>
+    <template id="listHeaderTemplate">
+        <li value="head" style="list-style: none;"><b>Header</b></li>
+    </template>
+    <template id="listItemTemplate">
+        <li value="{{value}}">{{name}}</li>
+    </template>
+    <template id="listItem2Template">
+        <li value="{{user.value}}">{{user.name}}</li>
+    </template>
+    <template id="addressTemplate">
+        <div SS="userid" style="margin-bottom:10px;">
+            <b>Name:</b> <span SS="name"></span><br />
+            <b>Address:</b> <span SS="address"></span><br />
+            <b>City:</b> <span SS="city"></span>, <span SS="state"></span> <b>Zipcode:</b> <span SS="zipcode" data-storage=""></span><br />
+            <b>Contact:</b><br />
+            <span style="margin-left: 5px;"><b>Name:</b></span>
+            <span SS="contact.name" style="margin-left: 5px;"></span>
+            <span style="margin-left: 5px;"><b>Phone:</b></span>
+            <span SS="contact.phone" style="margin-left: 5px;"></span>
+        </div>
+    </template>
+    <template id="bookTemplate">
+        <div SS="bookid", style="margin-bottom:10px;">
+            <h3 SS="title"></h3>
+            <div SS="style:color;rating"></div>
+            <div SS="description"></div>
+        </div>
+    </template>
+    <ul id="mylist">
+    </ul>
+    <div id="addresses"></div>
+    <div id="books"></div>
+</body>
+</html>
