@@ -5,15 +5,62 @@
 //
 var $$tache = function() {
 
-    var version = '0.5.2';
+    var version = '0.6.0';
   
     var exports = { version: version };
     var defaultOptions = {
         removess: false,
         escape: true,
         translate: null,
-        alwaysSetTranslatedProperty: false
+        alwaysSetTranslatedProperty: false,
+        reactive: true
     };
+
+    function GetValue(obj, path) {
+        var current;
+        let missing = false;
+        path.split('.').forEach((o) => {
+            if (missing)
+                return;
+
+            current = (typeof current !== 'undefined') ? current[o] : obj[o];
+            if (typeof (current) === 'undefined')
+                missing = true;
+        });
+            
+        return current;
+    }
+
+    function GetPropertyDetail(obj, path) {
+        var detail = { parent: obj, propertyName: '', descriptor: null };
+        var current;
+        let missing = false;
+        path.split('.').forEach((o) => {
+            if (missing)
+                return;
+
+            detail.propertyName = o;
+            if (typeof current !== 'undefined') {
+                detail.parent = current;
+                current = current[o];
+            }
+            else {
+                detail.parent = obj;
+                current = obj[o];
+            }
+
+            if (typeof (current) === 'undefined')
+                missing = true;
+        });
+
+        if (!missing) {
+            detail.descriptor = Object.getOwnPropertyDescriptor(detail.parent, detail.propertyName);
+
+            return detail;
+        }
+        else
+            return null;
+    }
 
     function GetValue(obj, path) {
         var current;
@@ -43,6 +90,8 @@ var $$tache = function() {
     }
 
     const fragment = (html) => { var tpl = document.createElement('template'); tpl.innerHTML = html; return tpl.content;  };
+    const isPlainObject = (o) => Object.prototype.toString.call(o) === '[object Object]';
+    const isFunction = (f) => typeof f === 'function';
 
     function Fill(template, data, options = defaultOptions) {
         if (typeof template === "string")
@@ -55,7 +104,7 @@ var $$tache = function() {
         options = GetAllOptionSettings(options);
 
          // Check if the template is a string or a function
-        template = typeof (template) === 'function' ? template() : template;
+        template = isFunction(template) ? template() : template;
         if (['string', 'number'].indexOf(typeof template) === -1) throw 'Please provide a valid template';
     
         // If no data, return template as-is
@@ -107,12 +156,15 @@ var $$tache = function() {
                 else {
                     ss = assignment;
                 }
-                var value = GetValue(data, ss);
-                if (typeof value !== 'undefined') {
-                    if (attribute == null && translate && translate.hasOwnProperty(ss))
-                        attribute = translate[ss];
+                var propDetail = GetPropertyDetail(data, ss);
+                if (propDetail != null) {
+                    var value = propDetail.parent[propDetail.propertyName]; // GetValue(data, ss);
+                    if (typeof value !== 'undefined') {
+                        if (attribute == null && translate && translate.hasOwnProperty(ss))
+                            attribute = translate[ss];
 
-                    FillElementWithData(e, attribute, value, data, options);
+                        FillElementWithData(e, attribute, value, propDetail, options);
+                    }
                 }
             });
             if (options.removess)
@@ -122,21 +174,21 @@ var $$tache = function() {
         return dom;
     }
 
-    function FillElementWithData(element, attribute, data, src, options) {
-        data = GetDataValue(data, src, element);
+    function FillElementWithData(element, attribute, data, propDetail, options) {
+        data = GetDataValue(data, propDetail.parent, element);
 
-        if (Object.prototype.toString.call(data) === '[object Object]') {
+        if (isPlainObject(data)) {
             FillElementWithObject(element, data, options);
         }
         else {
             if (attribute) {
                 if (element.hasAttribute(attribute))
-                    element.setAttribute(attribute, data);
+                    AssignAttribute(element, attribute, data, propDetail, options);
                 else
-                    element[attribute] = data;
+                    AssignProperty(element, attribute, data, propDetail, options);
             }
             else
-                element.textContent = data;
+                AssignText(element, data, propDetail, options);
         }
     }
 
@@ -146,6 +198,7 @@ var $$tache = function() {
         for (var key in data) {
             let tkey = key;
             let translated = false;
+            var propDetail = GetPropertyDetail(data, key);
             let dataValue = GetDataValue(data[key], data, element);
 
             if (translate && translate.hasOwnProperty(key)) {
@@ -154,23 +207,60 @@ var $$tache = function() {
             }
 
             if (typeof element[tkey] !== 'undefined') {
-                element[tkey] = dataValue;
+                AssignProperty(element, tkey, dataValue, propDetail, options);
             }
             else if (element.hasAttribute(tkey)) {
-                element.setAttribute(tkey, dataValue);
+                AssignAttribute(element, tkey, dataValue, propDetail, options);
             }
             else if (translated && options.alwaysSetTranslatedProperty)
-                element[tkey] = dataValue;
-        }
+                AssignProperty(element, tkey, dataValue, propDetail, options);
+            }
     }
 
     function GetDataValue(data, src, element) {
-        return (typeof data === 'function') ? data(element, src) : data;
+        return (isFunction(data)) ? data(element, src) : data;
     }
 
     function SetDefaultOptions(options) {
         defaultOptions = GetAllOptionSettings(options);
     }
+
+    function AssignAttribute(element, attribute, data, propDetail, options) {
+        element.setAttribute(attribute, data);
+        if (options.reactive) {
+            ChangeSetter(propDetail, (v) => { element.setAttribute(attribute, GetDataValue(v, propDetail.parent, element)); });
+        }
+    }
+
+    function AssignProperty(element, property, data, propDetail, options) {
+        element[property] = data;
+        if (options.reactive) {
+            ChangeSetter(propDetail, (v) => { element[property] =  GetDataValue(v, propDetail.parent, element); });
+        }
+    }
+
+    function AssignText(element, data, propDetail, options) {
+        element.textContent = data;
+        if (options.reactive) {
+            ChangeSetter(propDetail, (v) => { element.textContent =  GetDataValue(v, propDetail.parent, element); });
+        }
+    }
+
+    function ChangeSetter(propDetail, setter) {
+        let set = propDetail.descriptor.set;
+        let get = propDetail.descriptor.get;
+        let currentValue = propDetail.parent[propDetail.propertyName];
+        let descriptor = {
+            get: () => (isFunction(get)) ? get() : currentValue,
+            set: (v) => {
+                (isFunction(set)) ? set(v) : currentValue = v; 
+                setter(v); 
+            },
+            configurable: propDetail.descriptor.configurable,
+            enumerable: propDetail.descriptor.enumerable
+        };
+        Object.defineProperty(propDetail.parent, propDetail.propertyName, descriptor);
+}
 
     exports.fill = Fill;
     exports.fillHTML = FillHTML;

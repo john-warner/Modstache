@@ -111,3 +111,17 @@ test('Test setting event handler', function (assert) {
     var expected = onclick;
     assert.deepEqual(result, expected);
 });
+
+test('Test reactive', function (assert) {
+    var html = '<div ss="value">{{value}}</div>';
+    var template = document.createElement("template");
+    var data = { value: 'Hello' };
+
+    template.innerHTML = html;
+    $$tache.fill(template.content, data, { removess: true });
+    data.value = 'Bye';
+
+    var result = template.innerHTML;
+    var expected = "<div>Bye</div>";
+    assert.deepEqual(result, expected);
+});

@@ -32,15 +32,22 @@
         </div>
     </template>
     <template id="bookTemplate">
-        <div SS="bookid", style="margin-bottom:10px;">
+        <div SS="bookid" style="margin-bottom:10px;">
             <h3 SS="title"></h3>
             <div SS="style:color;rating"></div>
             <div SS="description"></div>
+        </div>
+    </template>
+    <template id="messageTemplate">
+        <div style="margin-bottom:10px;">
+            <h3>Message: <span SS="message"></span></h3>
+            <button SS="onclick:change">Change message</button>
         </div>
     </template>
     <ul id="mylist">
     </ul>
     <div id="addresses"></div>
     <div id="books"></div>
+    <div id="message"></div>
 </body>
 </html>
