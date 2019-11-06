@@ -20,28 +20,29 @@
         <li value="{{user.value}}">{{user.name}}</li>
     </template>
     <template id="addressTemplate">
-        <div SS="userid" style="margin-bottom:10px;">
-            <b>Name:</b> <span SS="name"></span><br />
-            <b>Address:</b> <span SS="address"></span><br />
-            <b>City:</b> <span SS="city"></span>, <span SS="state"></span> <b>Zipcode:</b> <span SS="zipcode" data-storage=""></span><br />
+        <div {}="userid" style="margin-bottom:10px;">
+            <b>Name:</b> <span {}="name"></span><br />
+            <b>Address:</b> <span {}="address"></span><br />
+            <b>City:</b> <span {}="city"></span>, <span {}="state"></span> <b>Zipcode:</b> <span {}="zipcode" data-storage=""></span><br />
             <b>Contact:</b><br />
             <span style="margin-left: 5px;"><b>Name:</b></span>
-            <span SS="contact.name" style="margin-left: 5px;"></span>
+            <span {}="contact.name" style="margin-left: 5px;"></span>
             <span style="margin-left: 5px;"><b>Phone:</b></span>
-            <span SS="contact.phone" style="margin-left: 5px;"></span>
+            <span {}="contact.phone" style="margin-left: 5px;"></span>
         </div>
     </template>
     <template id="bookTemplate">
-        <div SS="bookid" style="margin-bottom:10px;">
-            <h3 SS="title"></h3>
-            <div SS="style:color;rating"></div>
-            <div SS="description"></div>
+        <div {}="bookid" style="margin-bottom:10px;">
+            <h3 {}="title"></h3>
+            <div {}="style:color;rating"></div>
+            <div {}="description"></div>
         </div>
     </template>
     <template id="messageTemplate">
         <div style="margin-bottom:10px;">
-            <h3>Message: <span SS="message"></span></h3>
-            <button SS="onclick:change">Change message</button>
+            <h3>Message: <span {}="message"></span></h3>
+            <div>I said <span {}="message"></span></div>
+            <button {}="onclick:change">Change message</button>
         </div>
     </template>
     <ul id="mylist">

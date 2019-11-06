@@ -5,7 +5,7 @@
 //
 var $$tache = function() {
 
-    var version = '0.6.0';
+    var version = '0.6.5';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -13,7 +13,8 @@ var $$tache = function() {
         escape: true,
         translate: null,
         alwaysSetTranslatedProperty: false,
-        reactive: true
+        reactive: true,
+        stache: '{}'
     };
 
     function GetValue(obj, path) {
@@ -139,11 +140,12 @@ var $$tache = function() {
     function FillDOM(dom, data, options = defaultOptions) {
         options = GetAllOptionSettings(options);
 
-        var stached = dom.querySelectorAll("[SS]");
+        var stacheSelector = options.stache.replace('{','\\{').replace('}','\\}');
+        var stached = dom.querySelectorAll("["+stacheSelector+"]"); // getStached(dom,options.stacheAttribute);
         let translate = options.translate;
 
         stached.forEach((e) => {
-            var assignments = e.getAttribute("SS").split(';');
+            var assignments = e.getAttribute(options.stache).split(';');
 
             assignments.forEach((assignment) => {
                 var target = assignment.split(':');
@@ -168,7 +170,7 @@ var $$tache = function() {
                 }
             });
             if (options.removess)
-                e.removeAttribute("SS");
+                e.removeAttribute(options.stache);
         });
 
         return dom;

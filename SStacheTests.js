@@ -46,7 +46,7 @@ test('Test with disabled inserted script', function (assert) {
 });
 
 test('Test with dom fragment', function (assert) {
-    var html = '<div ss="value">{{value}}</div>';
+    var html = '<div {}="value">{{value}}</div>';
     var template = document.createElement("template");
     var data = { value: 'Hello' };
 
@@ -59,7 +59,7 @@ test('Test with dom fragment', function (assert) {
 });
 
 test('Test dom fragment translation', function (assert) {
-    var html = '<div ss="value">{{value}}</div>';
+    var html = '<div {}="value">{{value}}</div>';
     var template = document.createElement("template");
     var data = { value: { text: 'Hello' } };
     var translate = { text: 'textContent' };
@@ -73,7 +73,7 @@ test('Test dom fragment translation', function (assert) {
 });
 
 test('Test dom fragment attribute setting', function (assert) {
-    var html = '<div ss="value" class="">{{value}}</div>';
+    var html = '<div {}="value" class="">{{value}}</div>';
     var template = document.createElement("template");
     var data = { value: { class: 'bold', textContent: 'Hello' } };
 
@@ -86,7 +86,7 @@ test('Test dom fragment attribute setting', function (assert) {
 });
 
 test('Test dom fragment multiple attributes', function (assert) {
-    var html = '<div ss="value;class:class" class="">{{value}}</div>';
+    var html = '<div {}="value;class:class" class="">{{value}}</div>';
     var template = document.createElement("template");
     var data = { value: 'Hello', class: 'bold' };
 
@@ -99,7 +99,7 @@ test('Test dom fragment multiple attributes', function (assert) {
 });
 
 test('Test setting event handler', function (assert) {
-    let html = '<div ss="onclick:click">Hello</div>';
+    let html = '<div {}="onclick:click">Hello</div>';
     let template = document.createElement("template");
     let onclick = () => { alert('clicked'); }
     let data = { click: () => onclick };
@@ -113,7 +113,7 @@ test('Test setting event handler', function (assert) {
 });
 
 test('Test reactive', function (assert) {
-    var html = '<div ss="value">{{value}}</div>';
+    var html = '<div {}="value">{{value}}</div>';
     var template = document.createElement("template");
     var data = { value: 'Hello' };
 
@@ -125,3 +125,18 @@ test('Test reactive', function (assert) {
     var expected = "<div>Bye</div>";
     assert.deepEqual(result, expected);
 });
+
+
+test('Test SStache override default attribute', function (assert) {
+    var html = '<div SS="value;class:class;" class="">{{value}}</div>';
+    var template = document.createElement("template");
+    var data = { value: 'Hello', class: 'bold' };
+
+    template.innerHTML = html;
+    $$tache.fill(template.content, data, { stache: 'SS' });
+
+    var result = template.innerHTML;
+    var expected = '<div ss="value;class:class;" class="bold">Hello</div>'
+    assert.deepEqual(result, expected);
+});
+

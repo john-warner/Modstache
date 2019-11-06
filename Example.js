@@ -26,7 +26,7 @@ var SimpleExample = function() {
         { bookid: "B1", title: 'SSimple Programming', rating: '5/5', color: 'color:red', description: 'Great programming book.' },
         { bookid: "B2", title: 'Fun Times', rating: '4/5', color: 'color:blue', description: 'How to have fun.' }
     ]
-    var message = { message: 'Hello', change: (e,data) => () => { data.message = 'Goodbye'; }};
+    var message = { message: 'Hello', change: (e,data) => () => { Object.assign(data, { message: 'Goodbye' }); /* data.message = 'Goodbye'; */ }};
 
     $$.ready(Init);
     function Init() {
@@ -73,7 +73,7 @@ var SimpleExample = function() {
     function ShowMessage() {
         var template = $$.bind("#messageTemplate");
         var container = $$.bind("#message");
-        container.$$.append($$tache.fill(template.$$.copy(), message));
+        container.$$.append($$tache.fill(template.$$.copy(), message, { removess: true }));
     }
 
     return {
