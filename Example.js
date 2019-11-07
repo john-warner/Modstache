@@ -26,7 +26,13 @@ var SimpleExample = function() {
         { bookid: "B1", title: 'SSimple Programming', rating: '5/5', color: 'color:red', description: 'Great programming book.' },
         { bookid: "B2", title: 'Fun Times', rating: '4/5', color: 'color:blue', description: 'How to have fun.' }
     ]
-    var message = { message: 'Hello', change: (e,data) => () => { Object.assign(data, { message: 'Goodbye' }); /* data.message = 'Goodbye'; */ }};
+
+    var message = { counter: 0, 
+            message: 'Hello', 
+            change: (e,data) => () => { data.counter++; Object.assign(data, { message: 'You pressed the button ' + data.counter + ' times.' }); /* data.message = 'Goodbye'; */ }};
+
+    var time = { time: () => { return 'The current time is ' + (new Date()).toLocaleTimeString(); },
+                 change: (e,data) => () => data.time = data.time };
 
     $$.ready(Init);
     function Init() {
@@ -42,6 +48,7 @@ var SimpleExample = function() {
         ShowAddresses();
         ShowBooks();
         ShowMessage();
+        ShowTime();
      }
 
     function PopulateHead() {
@@ -73,13 +80,20 @@ var SimpleExample = function() {
     function ShowMessage() {
         var template = $$.bind("#messageTemplate");
         var container = $$.bind("#message");
-        container.$$.append($$tache.fill(template.$$.copy(), message, { removess: true }));
+        container.$$.append($$tache.fill(template.$$.copy(), message, { removeStache: true }));
+    }
+
+    function ShowTime() {
+        var template = $$.bind("#timeTemplate");
+        var container = $$.bind("#time");
+        container.$$.append($$tache.fill(template.$$.copy(), time, { removeStache: true }));
     }
 
     return {
         addresses: addresses,
         books: books,
-        message: message
+        message: message,
+        time: time
     };
 
 }();

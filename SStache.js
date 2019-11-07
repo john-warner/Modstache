@@ -5,11 +5,11 @@
 //
 var $$tache = function() {
 
-    var version = '0.6.6';
+    var version = '0.7.0';
   
     var exports = { version: version };
     var defaultOptions = {
-        removess: false,
+        removeStache: false,
         escape: true,
         translate: null,
         alwaysSetTranslatedProperty: false,
@@ -32,8 +32,8 @@ var $$tache = function() {
         return current;
     }
 
-    function GetPropertyDetail(obj, path) {
-        var detail = { parent: obj, propertyName: '', descriptor: null };
+    function GetPropertyDetail(root, obj, path) {
+        var detail = { root: root, parent: obj, propertyName: '', descriptor: null };
         var current;
         let missing = false;
         path.split('.').forEach((o) => {
@@ -93,6 +93,7 @@ var $$tache = function() {
     const fragment = (html) => { var tpl = document.createElement('template'); tpl.innerHTML = html; return tpl.content;  };
     const isPlainObject = (o) => Object.prototype.toString.call(o) === '[object Object]';
     const isFunction = (f) => typeof f === 'function';
+    const GetStacheInfo = (propDetail) => { return { root: propDetail.root, parent: propDetail.parent, key: propDetail.propertyName } };
 
     function Fill(template, data, options = defaultOptions) {
         if (typeof template === "string")
@@ -158,7 +159,7 @@ var $$tache = function() {
                 else {
                     ss = assignment;
                 }
-                var propDetail = GetPropertyDetail(data, ss);
+                var propDetail = GetPropertyDetail(data, data, ss);
                 if (propDetail != null) {
                     var value = propDetail.parent[propDetail.propertyName]; // GetValue(data, ss);
                     if (typeof value !== 'undefined') {
@@ -169,7 +170,7 @@ var $$tache = function() {
                     }
                 }
             });
-            if (options.removess)
+            if (options.removeStache)
                 e.removeAttribute(options.stache);
         });
 
@@ -177,20 +178,21 @@ var $$tache = function() {
     }
 
     function FillElementWithData(element, attribute, data, propDetail, options) {
-        data = GetDataValue(data, propDetail.parent, element);
+        var info = GetStacheInfo(propDetail);
+        var value = GetDataValue(data, element, info);
 
-        if (isPlainObject(data)) {
-            FillElementWithObject(element, data, options);
+        if (isPlainObject(value)) {
+            FillElementWithObject(element, value, options);
         }
         else {
             if (attribute) {
                 if (element.hasAttribute(attribute))
-                    AssignAttribute(element, attribute, data, propDetail, options);
+                    AssignAttribute(element, attribute, value, propDetail, info, options);
                 else
-                    AssignProperty(element, attribute, data, propDetail, options);
+                    AssignProperty(element, attribute, value, propDetail, info, options);
             }
             else
-                AssignText(element, data, propDetail, options);
+                AssignText(element, value, propDetail, info, options);
         }
     }
 
@@ -200,8 +202,9 @@ var $$tache = function() {
         for (var key in data) {
             let tkey = key;
             let translated = false;
-            var propDetail = GetPropertyDetail(data, key);
-            let dataValue = GetDataValue(data[key], data, element);
+            var propDetail = GetPropertyDetail(data, data, key);
+            var info = GetStacheInfo(propDetail);
+            let dataValue = GetDataValue(data[key], element, info);
 
             if (translate && translate.hasOwnProperty(key)) {
                 tkey = translate[key];
@@ -209,42 +212,43 @@ var $$tache = function() {
             }
 
             if (typeof element[tkey] !== 'undefined') {
-                AssignProperty(element, tkey, dataValue, propDetail, options);
+                AssignProperty(element, tkey, dataValue, propDetail, info, options);
             }
             else if (element.hasAttribute(tkey)) {
-                AssignAttribute(element, tkey, dataValue, propDetail, options);
+                AssignAttribute(element, tkey, dataValue, propDetail, info, options);
             }
             else if (translated && options.alwaysSetTranslatedProperty)
-                AssignProperty(element, tkey, dataValue, propDetail, options);
+                AssignProperty(element, tkey, dataValue, propDetail, info, options);
             }
     }
 
-    function GetDataValue(data, src, element) {
-        return (isFunction(data)) ? data(element, src) : data;
+
+    function GetDataValue(data, element, stacheInfo) {
+        return (isFunction(data)) ? data(element, stacheInfo.parent, stacheInfo) : data;
     }
 
     function SetDefaultOptions(options) {
         defaultOptions = GetAllOptionSettings(options);
     }
 
-    function AssignAttribute(element, attribute, data, propDetail, options) {
-        element.setAttribute(attribute, data);
+    function AssignAttribute(element, attribute, value, propDetail, info, options) {
+        element.setAttribute(attribute, value);
         if (options.reactive) {
-            ChangeSetter(propDetail, (v) => { v= GetDataValue(v, propDetail.parent, element); element.setAttribute(attribute, v); return v; });
+            ChangeSetter(propDetail, (v) => { v= GetDataValue(v, element, info); element.setAttribute(attribute, v); return v; });
         }
     }
 
-    function AssignProperty(element, property, data, propDetail, options) {
-        element[property] = data;
+    function AssignProperty(element, property, value, propDetail, info, options) {
+        element[property] = value;
         if (options.reactive) {
-            ChangeSetter(propDetail, (v) => { v = GetDataValue(v, propDetail.parent, element); element[property] =  v; return v; });
+            ChangeSetter(propDetail, (v) => { v = GetDataValue(v, element, info); element[property] =  v; return v; });
         }
     }
 
-    function AssignText(element, data, propDetail, options) {
-        element.textContent = data;
+    function AssignText(element, value, propDetail, info, options) {
+        element.textContent = value;
         if (options.reactive) {
-            ChangeSetter(propDetail, (v) => { v = GetDataValue(v, propDetail.parent, element); element.textContent =  v; return v; });
+            ChangeSetter(propDetail, (v) => { v = GetDataValue(v, element, info); element.textContent =  v; return v; });
         }
     }
 
@@ -253,10 +257,10 @@ var $$tache = function() {
         let get = propDetail.descriptor.get;
         let currentValue = propDetail.parent[propDetail.propertyName];
         let descriptor = {
-            get: (isFunction(get)) ? get : () => currentValue,
+            get: () => currentValue,
             set: (isFunction(set)) ? 
-                    (v) => { currentValue = setter(v); set(currentValue); } : 
-                    (v) => { currentValue = setter(v); },
+                    (v) => { currentValue = v; setter(v); set(v); } : 
+                    (v) => { currentValue = v; setter(v); },
             configurable: propDetail.descriptor.configurable,
             enumerable: propDetail.descriptor.enumerable
         };

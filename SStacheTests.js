@@ -51,7 +51,7 @@ test('Test with dom fragment', function (assert) {
     var data = { value: 'Hello' };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removess: true });
+    $$tache.fill(template.content, data, { removeStache: true });
 
     var result = template.innerHTML;
     var expected = "<div>Hello</div>";
@@ -65,7 +65,7 @@ test('Test dom fragment translation', function (assert) {
     var translate = { text: 'textContent' };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { translate: translate, removess: true });
+    $$tache.fill(template.content, data, { translate: translate, removeStache: true });
 
     var result = template.innerHTML;
     var expected = "<div>Hello</div>";
@@ -78,7 +78,7 @@ test('Test dom fragment attribute setting', function (assert) {
     var data = { value: { class: 'bold', textContent: 'Hello' } };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removess: true });
+    $$tache.fill(template.content, data, { removeStache: true });
 
     var result = template.innerHTML;
     var expected = '<div class="bold">Hello</div>'
@@ -91,7 +91,7 @@ test('Test dom fragment multiple attributes', function (assert) {
     var data = { value: 'Hello', class: 'bold' };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removess: true });
+    $$tache.fill(template.content, data, { removeStache: true });
 
     var result = template.innerHTML;
     var expected = '<div class="bold">Hello</div>'
@@ -118,7 +118,7 @@ test('Test reactive', function (assert) {
     var data = { value: 'Hello' };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removess: true });
+    $$tache.fill(template.content, data, { removeStache: true });
     data.value = 'Bye';
 
     var result = template.innerHTML;
