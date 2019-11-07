@@ -5,7 +5,7 @@
 //
 var $$tache = function() {
 
-    var version = '0.6.5';
+    var version = '0.6.6';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -230,21 +230,21 @@ var $$tache = function() {
     function AssignAttribute(element, attribute, data, propDetail, options) {
         element.setAttribute(attribute, data);
         if (options.reactive) {
-            ChangeSetter(propDetail, (v) => { element.setAttribute(attribute, GetDataValue(v, propDetail.parent, element)); });
+            ChangeSetter(propDetail, (v) => { v= GetDataValue(v, propDetail.parent, element); element.setAttribute(attribute, v); return v; });
         }
     }
 
     function AssignProperty(element, property, data, propDetail, options) {
         element[property] = data;
         if (options.reactive) {
-            ChangeSetter(propDetail, (v) => { element[property] =  GetDataValue(v, propDetail.parent, element); });
+            ChangeSetter(propDetail, (v) => { v = GetDataValue(v, propDetail.parent, element); element[property] =  v; return v; });
         }
     }
 
     function AssignText(element, data, propDetail, options) {
         element.textContent = data;
         if (options.reactive) {
-            ChangeSetter(propDetail, (v) => { element.textContent =  GetDataValue(v, propDetail.parent, element); });
+            ChangeSetter(propDetail, (v) => { v = GetDataValue(v, propDetail.parent, element); element.textContent =  v; return v; });
         }
     }
 
@@ -253,11 +253,10 @@ var $$tache = function() {
         let get = propDetail.descriptor.get;
         let currentValue = propDetail.parent[propDetail.propertyName];
         let descriptor = {
-            get: () => (isFunction(get)) ? get() : currentValue,
-            set: (v) => {
-                (isFunction(set)) ? set(v) : currentValue = v; 
-                setter(v); 
-            },
+            get: (isFunction(get)) ? get : () => currentValue,
+            set: (isFunction(set)) ? 
+                    (v) => { currentValue = setter(v); set(currentValue); } : 
+                    (v) => { currentValue = setter(v); },
             configurable: propDetail.descriptor.configurable,
             enumerable: propDetail.descriptor.enumerable
         };
