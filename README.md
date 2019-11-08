@@ -8,3 +8,168 @@ Data passed for assignment can be any needed value for the DOM element. The defa
  If an assignment is made with a data property containing a function, then the function is evaluated to obtain the assigned value. This allows calculations or additional operations to be made during the assignment.
  
  If an assignment is made with a data property containing an object, then the new object's keys are used to assign to specify the attributes/properties and values of the DOM element.
+
+To use the SStache library, include SStache.js or SStache.min.js file:
+
+ ```javascript
+   <script src="SStache.min.js"></script>
+```
+This will create the $$tache object that exposes the following API :
+
+* fill - assigns data properties. Works on an HTML string or DOM fragment. Returns the filled DOM fragment.
+* fillHTML - assigns data properties to an HTML string by replacing mustache syntax {{}}
+* fillDOM - assigns data properties to a DOM fragment by looking for elements with the {} attribute
+* options - gets/sets the default options for $$tache.
+
+### $$tache.fill
+
+Assigns data properties. Works on an HTML string or DOM fragment. Returns the filled DOM fragment.
+
+#### API call
+
+ ```javascript
+var targetFragment = $$tache.fill(target:HTML string or DOM fragment, data:object, optional options:object);
+```
+
+**Returns**
+The passed DOM fragment is modified and returned or a new fragment is created from the passed HTML.
+
+#### Example of $$tache.fill with HTML string
+
+ ```javascript
+    var html = "<div>{{value}}</div>";
+    var data = { value: 'Testing!' };
+    var fragment = $$tache.fill(html, data);
+    // fragment contains DOM elements "<div>Testing!</div>"
+```
+
+#### Example of $$tache.fill with DOM fragment
+
+ ```javascript
+    var html = '<div {}="value">This is replaced</div>';
+    var template = document.createElement("template");
+    var data = { value: 'Hello' };
+
+    template.innerHTML = html;
+    $$tache.fill(template.content, data, { removeStache: true });
+    // template.innerHTML is "<div>Hello</div>"
+```
+
+### $$tache.fillHTML
+
+Assigns data properties to an HTML string by replacing mustache syntax {{}}
+
+#### API call
+
+ ```javascript
+var html = $$tache.fillHTML(target:HTML string, data:object, optional options:object);
+```
+
+**Returns**
+An HTML string with replacements
+
+#### Example
+
+ ```javascript
+    var html = "<div>{{value}}</div>";
+    var data = { value: 'Testing!' };
+    var filledHtml = $$tache.fillHTML(html, data);
+    // filledHtml contains string "<div>Testing!</div>"
+```
+
+### $$tache.fillDOM
+
+Assigns data properties to a DOM fragment by looking for elements with the {} attribute
+
+#### API call
+
+ ```javascript
+var fragment = $$tache.fillDOM(target:DOM fragment, data:object, optional options:object);
+```
+
+**Returns**
+The passed DOM fragment is modified and returned. The data object is modified based on reactive option.
+
+#### Example
+
+ ```javascript
+    var html = '<div {}="value">This is replaced</div>';
+    var template = document.createElement("template");
+    var data = { value: 'Hello' };
+
+    template.innerHTML = html;
+    $$tache.fillDOM(template.content, data, { removeStache: true });
+    // template.innerHTML is "<div>Hello</div>"
+```
+
+### Stache attribute formatting
+
+The stache attribute can be formatted as follows:
+
+ ```html
+    <div {}="text;property1:prop1Value;property2:prop2Value;">This is replaced by default</div>
+```
+
+The names for "text", "property1", etc can be changed to match the data object properties.
+
+The data object would be setup as follows:
+
+ ```javascript
+     var data = { text: 'My text', property1: prop1Value, property2: prop2Value };
+```
+
+
+#### Example for populating an address component
+
+HTML
+ ```html
+    <div>
+        <b>Name:</b> <span {}="name"></span><br />
+        <b>Address:</b> <span {}="address"></span><br />
+        <b>City:</b> <span {}="city"></span>, <span {}="state"></span> <b>Zipcode:</b> <span {}="zipcode" data-storage=""></span><br />
+    </div>
+```
+
+Javascript
+ ```javascript
+    var address = { name: 'John Doe', address: '1234 Maple', city: 'Anytown', state: 'US', zipcode: '80000' };
+```
+
+
+#### Example changing address name style
+
+HTML
+ ```html
+    <div>
+        <b>Name:</b> <span {}="name"></span><br />
+        <b>Address:</b> <span {}="address"></span><br />
+        <b>City:</b> <span {}="city"></span>, <span {}="state"></span> <b>Zipcode:</b> <span {}="zipcode" data-storage=""></span><br />
+    </div>
+```
+
+Javascript
+ ```javascript
+    var address = { name: { text: 'Jill', style:'color:cyan;'}, address: '1234 Maple', city: 'Anytown', state: 'US', zipcode: '80000' };
+```
+
+### $$tache.options
+
+The following options can be defined through $$tache.options
+
+#### API call
+
+ ```javascript
+var options = $$tache.options({ modified properties });
+```
+
+**Returns**
+The passed DOM fragment is modified and returned or a new fragment is created from the passed HTML.
+
+* removeStache (false) - remove the stache attribute in the processed fragment
+* escape (true) - process replacement values for valid HTML text while disabling scripts
+* translate: (null) - object with property mappings
+* alwaysSetTranslatedProperty (false) - make sure property is defined if specified in translation object
+* reactive (true) - modify data object to affect target fragment when changed
+* stache ('{}') - name of the attribute to use for stache replacement specification
+
+

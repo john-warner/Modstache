@@ -5,7 +5,7 @@
 //
 var $$tache = function() {
 
-    var version = '0.7.0';
+    var version = '0.7.1';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -229,6 +229,7 @@ var $$tache = function() {
 
     function SetDefaultOptions(options) {
         defaultOptions = GetAllOptionSettings(options);
+        return {...defaultOptions}; // return a copy of the options
     }
 
     function AssignAttribute(element, attribute, value, propDetail, info, options) {
@@ -257,7 +258,7 @@ var $$tache = function() {
         let get = propDetail.descriptor.get;
         let currentValue = propDetail.parent[propDetail.propertyName];
         let descriptor = {
-            get: () => currentValue,
+            get: (isFunction(get)) ? get : () => currentValue,
             set: (isFunction(set)) ? 
                     (v) => { currentValue = v; setter(v); set(v); } : 
                     (v) => { currentValue = v; setter(v); },
