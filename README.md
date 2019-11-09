@@ -152,6 +152,49 @@ Javascript
     var address = { name: { text: 'Jill', style:'color:cyan;'}, address: '1234 Maple', city: 'Anytown', state: 'US', zipcode: '80000' };
 ```
 
+#### Modify using reactive data
+
+The default fill configuration is to make the data reactive.  This means that after the initial fill, the UI will be updated automatically on changes to the data. For example, with the following HTML and Javascript:
+
+HTML
+ ```html
+    <div id="myMessage" {}="message"></div>
+```
+
+Javascript
+ ```javascript
+    var message = { message: 'Hello' };
+    $$tache.fill(document.getElementById('myMessage'), message);
+```
+
+This will result in the following HTML:
+ ```html
+    <div id="myMessage" {}="message">Hello</div>
+```
+
+After the message is changed:
+ ```javascript
+    message.message = 'Hi';
+```
+
+The HTML will change to:
+ ```html
+    <div id="myMessage" {}="message">Hi</div>
+```
+
+The values in the data can be modified in the following ways to preserve the reactive nature of the data:
+ ```javascript
+    message.message = newvalue;
+    Object.assign(message, { message: newvalue });
+```
+
+The following methods can be used to clear the reactive nature of the data:
+ ```javascript
+    message = Object.assign({}, message);
+    message = {...message};
+```
+The UI can be filled again with the new object to make it reactive.
+
 ### $$tache.options
 
 The following options can be defined through $$tache.options
