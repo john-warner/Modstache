@@ -9,6 +9,8 @@ Data passed for assignment can be any needed value for the DOM element. The defa
  
  If an assignment is made with a data property containing an object, then the new object's keys are used to assign to specify the attributes/properties and values of the DOM element.
 
+ If an assignment is made with an array, then the DOM element and children are duplicated for each entry in the array. Each array entry is used as the model for the new elements.
+
 To use the SStache library, include SStache.js or SStache.min.js file:
 
  ```javascript

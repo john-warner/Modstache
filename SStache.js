@@ -1,11 +1,9 @@
 // SStache
-// Simple mustache placeholder replacement
-// Slightly modified from placeholder.js
-// Thank you Chris Ferdinandi at https://vanillajstoolkit.com/helpers/placeholders/
+// Simple mustache placeholder replacement and reactive model/dom assignment
 //
 var $$tache = function() {
 
-    var version = '0.7.1';
+    var version = '0.8.0';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -32,8 +30,8 @@ var $$tache = function() {
         return current;
     }
 
-    function GetPropertyDetail(root, obj, path) {
-        var detail = { root: root, parent: obj, propertyName: '', descriptor: null };
+    function GetPropertyDetail(root, obj, path, baseArray) {
+        var detail = { root: root, parent: obj, propertyName: '', descriptor: null, array: baseArray };
         var current;
         let missing = false;
         path.split('.').forEach((o) => {
@@ -93,7 +91,8 @@ var $$tache = function() {
     const fragment = (html) => { var tpl = document.createElement('template'); tpl.innerHTML = html; return tpl.content;  };
     const isPlainObject = (o) => Object.prototype.toString.call(o) === '[object Object]';
     const isFunction = (f) => typeof f === 'function';
-    const GetStacheInfo = (propDetail) => { return { root: propDetail.root, parent: propDetail.parent, key: propDetail.propertyName } };
+    const GetStacheInfo = (propDetail) => { return { root: propDetail.root, parent: propDetail.parent, key: propDetail.propertyName, array: propDetail.array } };
+    const GetStacheAttribute = (o) => o.stache.replace('{','\\{').replace('}','\\}');
 
     function Fill(template, data, options = defaultOptions) {
         if (typeof template === "string")
@@ -138,40 +137,45 @@ var $$tache = function() {
     
     };
 
-    function FillDOM(dom, data, options = defaultOptions) {
+    function FillDOM(dom, data, options = defaultOptions, domRootIsStached = false, baseArray = null) {
         options = GetAllOptionSettings(options);
 
-        var stacheSelector = options.stache.replace('{','\\{').replace('}','\\}');
-        var stached = dom.querySelectorAll("["+stacheSelector+"]"); // getStached(dom,options.stacheAttribute);
+        let stacheSelector = GetStacheAttribute(options);
+        var stached = [...dom.querySelectorAll("["+stacheSelector+"]")]; // getStached(dom,options.stacheAttribute);
         let translate = options.translate;
+        let processed = [];
 
+        if (domRootIsStached)
+            stached.unshift(dom);
         stached.forEach((e) => {
-            var assignments = e.getAttribute(options.stache).split(';');
+            if (!processed.includes(e)) {
+                var assignments = e.getAttribute(options.stache).split(';');
 
-            assignments.forEach((assignment) => {
-                var target = assignment.split(':');
-                var attribute = null;
-                var ss;
-                if (target.length > 1) {
-                    attribute = target[0];
-                    ss = target[1]
-                }
-                else {
-                    ss = assignment;
-                }
-                var propDetail = GetPropertyDetail(data, data, ss);
-                if (propDetail != null) {
-                    var value = propDetail.parent[propDetail.propertyName]; // GetValue(data, ss);
-                    if (typeof value !== 'undefined') {
-                        if (attribute == null && translate && translate.hasOwnProperty(ss))
-                            attribute = translate[ss];
-
-                        FillElementWithData(e, attribute, value, propDetail, options);
+                assignments.forEach((assignment) => {
+                    var target = assignment.split(':');
+                    var attribute = null;
+                    var ss;
+                    if (target.length > 1) {
+                        attribute = target[0];
+                        ss = target[1]
                     }
-                }
-            });
-            if (options.removeStache)
-                e.removeAttribute(options.stache);
+                    else {
+                        ss = assignment;
+                    }
+                    var propDetail = GetPropertyDetail(data, data, ss, baseArray);
+                    if (propDetail != null) {
+                        var value = propDetail.parent[propDetail.propertyName]; // GetValue(data, ss);
+                        if (typeof value !== 'undefined') {
+                            if (attribute == null && translate && translate.hasOwnProperty(ss))
+                                attribute = translate[ss];
+
+                            processed.push(FillElementWithData(e, attribute, value, propDetail, options));
+                        }
+                    }
+                });
+                if (options.removeStache)
+                    e.removeAttribute(options.stache);
+            }
         });
 
         return dom;
@@ -180,9 +184,15 @@ var $$tache = function() {
     function FillElementWithData(element, attribute, data, propDetail, options) {
         var info = GetStacheInfo(propDetail);
         var value = GetDataValue(data, element, info);
+        let processed = [element];
+        let stacheSelector = GetStacheAttribute(options);
 
         if (isPlainObject(value)) {
             FillElementWithObject(element, value, options);
+        }
+        else if (Array.isArray(value)) {
+            processed.push(element.querySelectorAll("["+stacheSelector+"]")); // children have been processed
+            CreateAndFillElements(element, value, propDetail, options);
         }
         else {
             if (attribute) {
@@ -194,6 +204,8 @@ var $$tache = function() {
             else
                 AssignText(element, value, propDetail, info, options);
         }
+
+        return processed;
     }
 
     function FillElementWithObject(element, data, options) {
@@ -222,6 +234,133 @@ var $$tache = function() {
             }
     }
 
+    function CreateAndFillElements(element, models, propDetail, options) {
+        let template = element.cloneNode(true);
+        let parent = element.parentNode;
+        let createdElements = [];
+        var proxy;
+
+        // replace with proxy before filling in case model functions need to change model
+        if (options.reactive) {
+            let context = GetFilledContext(template, parent, createdElements, models, options);
+            propDetail.parent[propDetail.propertyName] = proxy = GetFilledProxy(context); // repace array with proxy
+            context.proxy = proxy;
+        }
+
+        models.forEach((m) => {
+             createdElements.push(CreateFilledElement(proxy, template, m, parent, element, options));
+        });
+
+        parent.removeChild(element);
+    }
+
+    function CreateFilledElement(modelArray, template, model, parent, nextElement, options) {
+        let e = template.cloneNode(true);
+
+        FillDOM(e, model, options, true, modelArray);
+        if (nextElement)
+            parent.insertBefore(e, nextElement);
+        else
+            parent.appendChild(e);
+
+        return e;
+    }
+
+    function GetFilledContext(template, parent, createdElements, models, options) {
+        return {
+            template: template,
+            parent: parent,
+            elements: createdElements,
+            models: models,
+            options: {...options},
+            proxy: null // to be added after proxy is created
+        };
+    }
+
+    const deleteElements = (context, start, deleteCount) => {
+        if (isNaN(deleteCount))
+            deleteCount = context.elements.length;
+        else if (deleteCount <= 0)
+            return; // don't delete
+        let end = Math.min(start+deleteCount, context.elements.length);
+        for (let i=start; i<end; i++) {
+            context.parent.removeChild(context.elements[i]);
+        }
+        context.elements.splice(start, deleteCount);
+    };
+    const insertElements = (context, start, models) => {
+        let beforeElement = (start < context.elements.length) ? context.elements[start] : null;
+        let newElements = [];
+        for (let i=0; i < models.length; i++) {
+            newElements.push(CreateFilledElement(context.proxy, context.template, models[i], context.parent, beforeElement, context.options));
+        }
+        context.elements.splice(start,0,...newElements);
+    };
+    const push = (context) => function (model)  {
+        context.elements.push(CreateFilledElement(context.proxy, context.template, model, context.parent, null, context.options));
+        context.models.push(...arguments);
+    };
+    const unshift = (context) => function (model) {
+        insertElements(context, 0, [model]);
+        context.models.unshift(...arguments);
+    };
+    const splice = (context) => function (start, deleteCount, ...models) {
+        start = (start < 0) ? Math.max(0, context.models.length-start) : Math.min(start, context.models.length);
+        deleteElements(context, start, deleteCount);
+        insertElements(context, start, models);
+        context.models.splice(...arguments);
+    };
+    const pop = (context) => function () {
+        deleteElements(context, context.models.length-1, 1);
+        const el = context.models.pop(...arguments);
+        return el;
+    };
+    const shift = (context) => function () {
+        deleteElements(context, 0, 1);
+        const el = context.models.shift(...arguments);
+        return el;
+    };
+    
+    function GetFilledProxy(context) {
+        let modifiers = {
+            push: push(context),
+            unshift: unshift(context),
+            splice: splice(context),
+            pop: pop(context),
+            shift: shift(context)
+        };
+        let handler = {
+            get: function(target, property) {
+                const val = target[property];
+                if (typeof val === 'function') {
+                    switch(property) {
+                        case 'push': return modifiers.push;
+                        case 'unshift': return modifiers.unshift;
+                        case 'splice': return modifiers.splice;
+                        case 'pop': return modifiers.pop;
+                        case 'shift': return modifiers.shift;
+                        default: return val.bind(target);
+                    }
+                }
+
+                return val;
+            },
+            set: function(target, property, value, receiver) {
+                if (!isNaN(property)) { // replacing setting specific index
+                    modifiers.splice(property, 1, value);
+                }
+                if (property ==='length') {
+                    if (target.length > value) { // array reduced in size
+                        modifiers.splice(value);
+                    }
+                }
+                target[property] = value;
+                return true;
+            }
+        };
+
+        return new Proxy(context.models, handler);
+    }
 
     function GetDataValue(data, element, stacheInfo) {
         return (isFunction(data)) ? data(element, stacheInfo.parent, stacheInfo) : data;

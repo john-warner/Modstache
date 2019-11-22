@@ -140,3 +140,106 @@ test('Test SStache override default attribute', function (assert) {
     assert.deepEqual(result, expected);
 });
 
+test('Test with array', function (assert) {
+    var html = '<div><div {}="text"></div></div>';
+    var data = { text: [{ text: 'One'}, { text: 'Two' }] };
+    var template = document.createElement("template");
+
+    template.innerHTML = html;
+    $$tache.fill(template.content, data, { removeStache: true });
+
+    var result = template.innerHTML;
+    var expected = '<div><div>One</div><div>Two</div></div>'
+    assert.deepEqual(result, expected);
+});
+
+test('Test with array push', function (assert) {
+    var html = '<div><div {}="text"></div></div>';
+    var data = { text: [{ text: 'One'}, { text: 'Two' }] };
+    var template = document.createElement("template");
+
+    template.innerHTML = html;
+    $$tache.fill(template.content, data, { removeStache: true });
+    data.text.push({ text: 'Three' });
+    var result = template.innerHTML;
+    var expected = '<div><div>One</div><div>Two</div><div>Three</div></div>'
+    assert.deepEqual(result, expected);
+});
+
+test('Test with array unshift', function (assert) {
+    var html = '<div><div {}="text"></div></div>';
+    var data = { text: [{ text: 'One'}, { text: 'Two' }] };
+    var template = document.createElement("template");
+
+    template.innerHTML = html;
+    $$tache.fill(template.content, data, { removeStache: true });
+    data.text.unshift({ text: 'Three' });
+    var result = template.innerHTML;
+    var expected = '<div><div>Three</div><div>One</div><div>Two</div></div>'
+    assert.deepEqual(result, expected);
+});
+
+test('Test with array splice', function (assert) {
+    var html = '<div><div {}="text"></div></div>';
+    var data = { text: [{ text: 'One'}, { text: 'Two' }] };
+    var template = document.createElement("template");
+
+    template.innerHTML = html;
+    $$tache.fill(template.content, data, { removeStache: true });
+    data.text.splice(1,1,{ text: 'Three' });
+    var result = template.innerHTML;
+    var expected = '<div><div>One</div><div>Three</div></div>'
+    assert.deepEqual(result, expected);
+});
+
+test('Test with array pop', function (assert) {
+    var html = '<div><div {}="text"></div></div>';
+    var data = { text: [{ text: 'One'}, { text: 'Two' }] };
+    var template = document.createElement("template");
+
+    template.innerHTML = html;
+    $$tache.fill(template.content, data, { removeStache: true });
+    data.text.pop();
+    var result = template.innerHTML;
+    var expected = '<div><div>One</div></div>'
+    assert.deepEqual(result, expected);
+});
+
+test('Test with array shift', function (assert) {
+    var html = '<div><div {}="text"></div></div>';
+    var data = { text: [{ text: 'One'}, { text: 'Two' }] };
+    var template = document.createElement("template");
+
+    template.innerHTML = html;
+    $$tache.fill(template.content, data, { removeStache: true });
+    data.text.shift();
+    var result = template.innerHTML;
+    var expected = '<div><div>Two</div></div>'
+    assert.deepEqual(result, expected);
+});
+
+test('Test with array index assignment', function (assert) {
+    var html = '<div><div {}="text"></div></div>';
+    var data = { text: [{ text: 'One'}, { text: 'Two' }] };
+    var template = document.createElement("template");
+
+    template.innerHTML = html;
+    $$tache.fill(template.content, data, { removeStache: true });
+    data.text[1] = { text: "abc" };
+    var result = template.innerHTML;
+    var expected = '<div><div>One</div><div>abc</div></div>'
+    assert.deepEqual(result, expected);
+});
+
+test('Test with array length assignment', function (assert) {
+    var html = '<div><div {}="text"></div></div>';
+    var data = { text: [{ text: 'One'}, { text: 'Two' }] };
+    var template = document.createElement("template");
+
+    template.innerHTML = html;
+    $$tache.fill(template.content, data, { removeStache: true });
+    data.text.length = 1;
+    var result = template.innerHTML;
+    var expected = '<div><div>One</div></div>'
+    assert.deepEqual(result, expected);
+});
