@@ -3,7 +3,7 @@
 //
 var $$tache = function() {
 
-    var version = '0.8.0';
+    var version = '0.8.1';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -289,20 +289,30 @@ var $$tache = function() {
         context.elements.splice(start, deleteCount);
     };
     const insertElements = (context, start, models) => {
-        let beforeElement = (start < context.elements.length) ? context.elements[start] : null;
-        let newElements = [];
-        for (let i=0; i < models.length; i++) {
-            newElements.push(CreateFilledElement(context.proxy, context.template, models[i], context.parent, beforeElement, context.options));
+        if (models.length > 0) {
+            let beforeElement = (start < context.elements.length) ? context.elements[start] : null;
+            let newElements = [];
+            let fragment = new DocumentFragment();
+
+            for (let i=0; i < models.length; i++) {
+                newElements.push(CreateFilledElement(context.proxy, context.template, models[i], fragment, null, context.options));
+            }
+
+            if (beforeElement)
+                context.parent.insertBefore(fragment, beforeElement);
+            else
+                context.parent.appendChild(fragment);
+            
+            context.elements.splice(start,0,...newElements);
         }
-        context.elements.splice(start,0,...newElements);
     };
-    const push = (context) => function (model)  {
-        context.elements.push(CreateFilledElement(context.proxy, context.template, model, context.parent, null, context.options));
-        context.models.push(...arguments);
+    const push = (context) => function (...models)  {
+        insertElements(context, context.models.length, models);
+        context.models.push(...models);
     };
-    const unshift = (context) => function (model) {
-        insertElements(context, 0, [model]);
-        context.models.unshift(...arguments);
+    const unshift = (context) => function (...models) {
+        insertElements(context, 0, models);
+        context.models.unshift(...models);
     };
     const splice = (context) => function (start, deleteCount, ...models) {
         start = (start < 0) ? Math.max(0, context.models.length-start) : Math.min(start, context.models.length);

@@ -186,9 +186,9 @@ test('Test with array splice', function (assert) {
 
     template.innerHTML = html;
     $$tache.fill(template.content, data, { removeStache: true });
-    data.text.splice(1,1,{ text: 'Three' });
+    data.text.splice(1,1,{ text: 'Three' },{ text: 'Four' });
     var result = template.innerHTML;
-    var expected = '<div><div>One</div><div>Three</div></div>'
+    var expected = '<div><div>One</div><div>Three</div><div>Four</div></div>'
     assert.deepEqual(result, expected);
 });
 
