@@ -1,9 +1,10 @@
 // SStache
 // Simple mustache placeholder replacement and reactive model/dom assignment
 //
+//
 var $$tache = function() {
 
-    var version = '0.8.1';
+    var version = '0.8.5';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -137,19 +138,35 @@ var $$tache = function() {
     
     };
 
-    function FillDOM(dom, data, options = defaultOptions, domRootIsStached = false, baseArray = null) {
+    function FillDOM(dom, data, options = defaultOptions, baseArray = null) {
         options = GetAllOptionSettings(options);
 
         let stacheSelector = GetStacheAttribute(options);
         var stached = [...dom.querySelectorAll("["+stacheSelector+"]")]; // getStached(dom,options.stacheAttribute);
         let translate = options.translate;
         let processed = [];
+        let stachedDOMroot = (dom instanceof DocumentFragment) ? null : dom.getAttribute(options.stache);
 
-        if (domRootIsStached)
+        if (stachedDOMroot) {
             stached.unshift(dom);
+
+            // check to see if template is specified
+            let assignments = stachedDOMroot.split(';');
+            for (let i=0; i < assignments.length; i++) {
+                let assignment = assignments[i];
+                let specifier = assignment.split(':');
+                if (specifier.length > 1 && specifier[0] === 'template') {
+                    let detail = GetPropertyDetail(data, data, specifier[1], baseArray);
+                    let template = detail.parent[detail.propertyName];
+                    if (template instanceof DocumentFragment) {
+                        return FillDOM(template, data, options, baseArray);
+                    }
+                }
+            }
+        }
         stached.forEach((e) => {
             if (!processed.includes(e)) {
-                var assignments = e.getAttribute(options.stache).split(';');
+                let assignments = e.getAttribute(options.stache).split(';');
 
                 assignments.forEach((assignment) => {
                     var target = assignment.split(':');
@@ -238,18 +255,26 @@ var $$tache = function() {
         let template = element.cloneNode(true);
         let parent = element.parentNode;
         let createdElements = [];
+        let fragment = new DocumentFragment();
         var proxy;
+        let context = GetFilledContext(template, parent, createdElements, models, options);
 
         // replace with proxy before filling in case model functions need to change model
         if (options.reactive) {
-            let context = GetFilledContext(template, parent, createdElements, models, options);
             propDetail.parent[propDetail.propertyName] = proxy = GetFilledProxy(context); // repace array with proxy
             context.proxy = proxy;
         }
 
         models.forEach((m) => {
-             createdElements.push(CreateFilledElement(proxy, template, m, parent, element, options));
+             createdElements.push(CreateFilledElement(proxy, template, m, fragment, null, options));
         });
+
+        parent.insertBefore(fragment, element);
+
+        if (createdElements.length === 0) { // empty arrive so insert placeholder
+            context.placeholder = document.createElement("template"); // template element won't affect layout
+            parent.insertBefore(context.placeholder, element);
+        }
 
         parent.removeChild(element);
     }
@@ -257,7 +282,7 @@ var $$tache = function() {
     function CreateFilledElement(modelArray, template, model, parent, nextElement, options) {
         let e = template.cloneNode(true);
 
-        FillDOM(e, model, options, true, modelArray);
+        e = FillDOM(e, model, options, modelArray);
         if (nextElement)
             parent.insertBefore(e, nextElement);
         else
@@ -273,7 +298,8 @@ var $$tache = function() {
             elements: createdElements,
             models: models,
             options: {...options},
-            proxy: null // to be added after proxy is created
+            proxy: null, // real proxy to be added if reactive is enabled
+            placeholder: null // placeholder element for empty list
         };
     }
 
@@ -283,6 +309,12 @@ var $$tache = function() {
         else if (deleteCount <= 0)
             return; // don't delete
         let end = Math.min(start+deleteCount, context.elements.length);
+
+        if (start === 0 && end > 0 && end === context.elements.length) { // add placeholder
+            context.placeholder = context.placeholder || document.createElement("template");
+            context.parent.insertBefore(context.placeholder, context.elements[0]);
+        }
+
         for (let i=start; i<end; i++) {
             context.parent.removeChild(context.elements[i]);
         }
@@ -290,19 +322,21 @@ var $$tache = function() {
     };
     const insertElements = (context, start, models) => {
         if (models.length > 0) {
-            let beforeElement = (start < context.elements.length) ? context.elements[start] : null;
+            let beforeElement = (context.elements.length === 0) ? context.placeholder : (start < context.elements.length) ? context.elements[start] : context.elements[context.elements.length-1].nextElementSibling;
             let newElements = [];
             let fragment = new DocumentFragment();
 
-            for (let i=0; i < models.length; i++) {
-                newElements.push(CreateFilledElement(context.proxy, context.template, models[i], fragment, null, context.options));
-            }
+            models.forEach((m) => {
+                newElements.push(CreateFilledElement(context.proxy, context.template, m, fragment, null, context.options));
+            });
 
             if (beforeElement)
                 context.parent.insertBefore(fragment, beforeElement);
             else
                 context.parent.appendChild(fragment);
             
+            if (beforeElement && beforeElement === context.placeholder)
+                context.parent.removeChild(beforeElement); // clear placeholder
             context.elements.splice(start,0,...newElements);
         }
     };

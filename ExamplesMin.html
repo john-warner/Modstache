@@ -58,11 +58,13 @@
         <button {}="onclick:clearOptions">Clear Options</button>
         </br>
         <ul style="margin-bottom:10px;">
+            <li>Before</li>
             <li {}="options;value:value;">
                 <span {}="text"></span>
                 <span {}="onclick:deleteOption" style="cursor:pointer;font-size:small;font-weight:bold;color:green;">x</span>
                 <span {}="onclick:positionOption" style="cursor:pointer;font-size:small;font-weight:bold;color:orangered;">*</span>
             </li>
+            <li>After</li>
         </ul>
     </template>
     <ul id="mylist">
