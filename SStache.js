@@ -4,7 +4,7 @@
 //
 var $$tache = function() {
 
-    var version = '0.8.5';
+    var version = '0.8.6';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -149,20 +149,6 @@ var $$tache = function() {
 
         if (stachedDOMroot) {
             stached.unshift(dom);
-
-            // check to see if template is specified
-            let assignments = stachedDOMroot.split(';');
-            for (let i=0; i < assignments.length; i++) {
-                let assignment = assignments[i];
-                let specifier = assignment.split(':');
-                if (specifier.length > 1 && specifier[0] === 'template') {
-                    let detail = GetPropertyDetail(data, data, specifier[1], baseArray);
-                    let template = detail.parent[detail.propertyName];
-                    if (template instanceof DocumentFragment) {
-                        return FillDOM(template, data, options, baseArray);
-                    }
-                }
-            }
         }
         stached.forEach((e) => {
             if (!processed.includes(e)) {
@@ -257,7 +243,19 @@ var $$tache = function() {
         let createdElements = [];
         let fragment = new DocumentFragment();
         var proxy;
-        let context = GetFilledContext(template, parent, createdElements, models, options);
+        var templateSpecifier;
+
+        // check to see if template is specified
+        let assignments = element.getAttribute(options.stache).split(';');
+        for (let i=0; i < assignments.length; i++) {
+            let assignment = assignments[i];
+            let specifier = assignment.split(':');
+            if (specifier.length > 1 && specifier[0] === 'template') {
+                templateSpecifier =  specifier[1];
+            }
+        }
+
+        let context = GetFilledContext(template, templateSpecifier, parent, createdElements, models, options);
 
         // replace with proxy before filling in case model functions need to change model
         if (options.reactive) {
@@ -266,7 +264,8 @@ var $$tache = function() {
         }
 
         models.forEach((m) => {
-             createdElements.push(CreateFilledElement(proxy, template, m, fragment, null, options));
+            let dom = GetTemplate(context, m);
+            createdElements.push(CreateFilledElement(proxy, dom, m, fragment, null, options));
         });
 
         parent.insertBefore(fragment, element);
@@ -291,9 +290,26 @@ var $$tache = function() {
         return e;
     }
 
-    function GetFilledContext(template, parent, createdElements, models, options) {
+    function GetTemplate(context, model) {
+        let defaultTemplate = context.template;
+        let specifier = context.templateSpecifier;
+
+        if (specifier) {
+            let detail = GetPropertyDetail(model, model, specifier, null);
+            if (detail) {
+                let t = detail.parent[detail.propertyName];
+                if (t instanceof DocumentFragment)
+                    return t;
+            }
+        }
+
+        return defaultTemplate;
+    }
+
+    function GetFilledContext(template, templateSpecifier, parent, createdElements, models, options) {
         return {
             template: template,
+            templateSpecifier : templateSpecifier,
             parent: parent,
             elements: createdElements,
             models: models,
@@ -327,7 +343,8 @@ var $$tache = function() {
             let fragment = new DocumentFragment();
 
             models.forEach((m) => {
-                newElements.push(CreateFilledElement(context.proxy, context.template, m, fragment, null, context.options));
+                let dom = GetTemplate(context, m);
+                newElements.push(CreateFilledElement(context.proxy, dom, m, fragment, null, context.options));
             });
 
             if (beforeElement)
