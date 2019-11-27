@@ -2,9 +2,14 @@
 // Simple mustache placeholder replacement and reactive model/dom assignment
 //
 //
+
+/*jshint esversion: 9 */
+
 var $$tache = function() {
 
-    var version = '0.8.6';
+    'use strict';
+
+    var version = '0.8.7';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -61,21 +66,6 @@ var $$tache = function() {
         else
             return null;
     }
-
-    function GetValue(obj, path) {
-        var current;
-        let missing = false;
-        path.split('.').forEach((o) => {
-            if (missing)
-                return;
-
-            current = (typeof current !== 'undefined') ? current[o] : obj[o];
-            if (typeof (current) === 'undefined')
-                missing = true;
-        });
-            
-        return current;
-    }
     
     function EscapeForHtml(s) {
         if (typeof(s) === 'string') {
@@ -92,7 +82,7 @@ var $$tache = function() {
     const fragment = (html) => { var tpl = document.createElement('template'); tpl.innerHTML = html; return tpl.content;  };
     const isPlainObject = (o) => Object.prototype.toString.call(o) === '[object Object]';
     const isFunction = (f) => typeof f === 'function';
-    const GetStacheInfo = (propDetail) => { return { root: propDetail.root, parent: propDetail.parent, key: propDetail.propertyName, array: propDetail.array } };
+    const GetStacheInfo = (propDetail) => { return { root: propDetail.root, parent: propDetail.parent, key: propDetail.propertyName, array: propDetail.array }; };
     const GetStacheAttribute = (o) => o.stache.replace('{','\\{').replace('}','\\}');
 
     function Fill(template, data, options = defaultOptions) {
@@ -136,7 +126,7 @@ var $$tache = function() {
     
         return template;
     
-    };
+    }
 
     function FillDOM(dom, data, options = defaultOptions, baseArray = null) {
         options = GetAllOptionSettings(options);
@@ -160,7 +150,7 @@ var $$tache = function() {
                     var ss;
                     if (target.length > 1) {
                         attribute = target[0];
-                        ss = target[1]
+                        ss = target[1];
                     }
                     else {
                         ss = assignment;
