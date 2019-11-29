@@ -9,7 +9,7 @@ var $$tache = function() {
 
     'use strict';
 
-    var version = '0.8.7';
+    var version = '0.8.8';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -20,6 +20,7 @@ var $$tache = function() {
         reactive: true,
         stache: '{}'
     };
+    const PlaceholderTag = 'slot';
 
     function GetValue(obj, path) {
         var current;
@@ -76,7 +77,9 @@ var $$tache = function() {
     }
 
     function GetAllOptionSettings(options) {
-        return Object.assign({...defaultOptions}, options); // make copy of options with all options
+        //return Object.assign({...defaultOptions}, options); // not supported by edge
+        let settings = Object.assign({}, defaultOptions);
+        return Object.assign(settings, options); // make copy of options with all options
     }
 
     const fragment = (html) => { var tpl = document.createElement('template'); tpl.innerHTML = html; return tpl.content;  };
@@ -261,7 +264,7 @@ var $$tache = function() {
         parent.insertBefore(fragment, element);
 
         if (createdElements.length === 0) { // empty arrive so insert placeholder
-            context.placeholder = document.createElement("template"); // template element won't affect layout
+            context.placeholder = document.createElement(PlaceholderTag); // template element won't affect layout
             parent.insertBefore(context.placeholder, element);
         }
 
@@ -303,7 +306,7 @@ var $$tache = function() {
             parent: parent,
             elements: createdElements,
             models: models,
-            options: {...options},
+            options: Object.assign({},options),
             proxy: null, // real proxy to be added if reactive is enabled
             placeholder: null // placeholder element for empty list
         };
@@ -317,7 +320,7 @@ var $$tache = function() {
         let end = Math.min(start+deleteCount, context.elements.length);
 
         if (start === 0 && end > 0 && end === context.elements.length) { // add placeholder
-            context.placeholder = context.placeholder || document.createElement("template");
+            context.placeholder = context.placeholder || document.createElement(PlaceholderTag);
             context.parent.insertBefore(context.placeholder, context.elements[0]);
         }
 
@@ -347,26 +350,26 @@ var $$tache = function() {
             context.elements.splice(start,0,...newElements);
         }
     };
-    const push = (context) => function (...models)  {
+    const push = (context) => async function (...models)  {
         insertElements(context, context.models.length, models);
         context.models.push(...models);
     };
-    const unshift = (context) => function (...models) {
+    const unshift = (context) => async function (...models) {
         insertElements(context, 0, models);
         context.models.unshift(...models);
     };
-    const splice = (context) => function (start, deleteCount, ...models) {
+    const splice = (context) => async function (start, deleteCount, ...models) {
         start = (start < 0) ? Math.max(0, context.models.length-start) : Math.min(start, context.models.length);
         deleteElements(context, start, deleteCount);
         insertElements(context, start, models);
         context.models.splice(...arguments);
     };
-    const pop = (context) => function () {
+    const pop = (context) => async function () {
         deleteElements(context, context.models.length-1, 1);
         const el = context.models.pop(...arguments);
         return el;
     };
-    const shift = (context) => function () {
+    const shift = (context) => async function () {
         deleteElements(context, 0, 1);
         const el = context.models.shift(...arguments);
         return el;
@@ -419,7 +422,7 @@ var $$tache = function() {
 
     function SetDefaultOptions(options) {
         defaultOptions = GetAllOptionSettings(options);
-        return {...defaultOptions}; // return a copy of the options
+        return Object.assign({},defaultOptions); // return a copy of the options
     }
 
     function AssignAttribute(element, attribute, value, propDetail, info, options) {
