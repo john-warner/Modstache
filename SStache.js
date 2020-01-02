@@ -329,6 +329,7 @@ var $$tache = function() {
         }
         context.elements.splice(start, deleteCount);
     };
+
     const insertElements = (context, start, models) => {
         if (models.length > 0) {
             let beforeElement = (context.elements.length === 0) ? context.placeholder : (start < context.elements.length) ? context.elements[start] : context.elements[context.elements.length-1].nextElementSibling;
@@ -350,26 +351,26 @@ var $$tache = function() {
             context.elements.splice(start,0,...newElements);
         }
     };
-    const push = (context) => async function (...models)  {
+    const push = (context) => function (...models)  {
         insertElements(context, context.models.length, models);
-        context.models.push(...models);
+        return context.models.push(...models);
     };
-    const unshift = (context) => async function (...models) {
+    const unshift = (context) => function (...models) {
         insertElements(context, 0, models);
-        context.models.unshift(...models);
+        return context.models.unshift(...models);
     };
-    const splice = (context) => async function (start, deleteCount, ...models) {
+    const splice = (context) => function (start, deleteCount, ...models) {
         start = (start < 0) ? Math.max(0, context.models.length-start) : Math.min(start, context.models.length);
         deleteElements(context, start, deleteCount);
         insertElements(context, start, models);
-        context.models.splice(...arguments);
+        return context.models.splice(...arguments);
     };
-    const pop = (context) => async function () {
+    const pop = (context) => function () {
         deleteElements(context, context.models.length-1, 1);
         const el = context.models.pop(...arguments);
         return el;
     };
-    const shift = (context) => async function () {
+    const shift = (context) => function () {
         deleteElements(context, 0, 1);
         const el = context.models.shift(...arguments);
         return el;
