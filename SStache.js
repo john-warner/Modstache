@@ -9,7 +9,7 @@ var $$tache = function() {
 
     'use strict';
 
-    var version = '0.8.8';
+    var version = '0.8.9';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -197,6 +197,8 @@ var $$tache = function() {
                 else
                     AssignProperty(element, attribute, value, propDetail, info, options);
             }
+            else if (attribute === '')
+                AssignNothing(element, propDetail, info, options);  // useful for external initialization of element
             else
                 AssignText(element, value, propDetail, info, options);
         }
@@ -437,6 +439,12 @@ var $$tache = function() {
         element[property] = value;
         if (options.reactive) {
             ChangeSetter(propDetail, (v) => { v = GetDataValue(v, element, info); element[property] =  v; return v; });
+        }
+    }
+
+    function AssignNothing(element, propDetail, info, options) {
+        if (options.reactive) {
+            ChangeSetter(propDetail, (v) => { v = GetDataValue(v, element, info); return v; });
         }
     }
 

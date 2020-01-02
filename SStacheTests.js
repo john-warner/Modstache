@@ -81,7 +81,21 @@ test('Test dom fragment attribute setting', function (assert) {
     $$tache.fill(template.content, data, { removeStache: true });
 
     var result = template.innerHTML;
-    var expected = '<div class="bold">Hello</div>'
+    var expected = '<div class="bold">Hello</div>';
+    assert.deepEqual(result, expected);
+});
+
+test('Test dom fragment external initialization', function (assert) {
+    var html = '<div {}=":init"></div>';
+    var template = document.createElement("template");
+    var inited = false;
+    var data = { init: () => { inited = true; } };
+
+    template.innerHTML = html;
+    $$tache.fill(template.content, data, { removeStache: true });
+
+    var result = inited;
+    var expected = true;
     assert.deepEqual(result, expected);
 });
 
