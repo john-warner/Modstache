@@ -259,7 +259,7 @@ test('Test with array length assignment', function (assert) {
 });
 
 test('Test with array modified template', function (assert) {
-    var html = '<div><div {}="templatetest;template:mytemplate"></div></div>';
+    var html = '<div><div {}="templatetest;{template}:mytemplate"></div></div>';
     var html1 = '<div>Template One</div>';
     var html2 = '<div>Template Two</div>';
     var template = document.createElement("template");
@@ -273,5 +273,18 @@ test('Test with array modified template', function (assert) {
     $$tache.fill(template.content, data, { removeStache: true });
     var result = template.innerHTML;
     var expected = '<div><div>Template One</div><div>Template Two</div></div>'
+    assert.deepEqual(result, expected);
+});
+
+test('Test {if} directive', function (assert) {
+    var html = '<div><div {}="{if}:hide">Hidden</div><div {}="{if}:show">Shown</div></div>';
+    var template = document.createElement("template");
+    var data = { show: true, hide: false };
+
+    template.innerHTML = html;
+    $$tache.fill(template.content, data, { removeStache: true });
+
+    var result = template.innerHTML;
+    var expected = '<div><div>Shown</div></div>';
     assert.deepEqual(result, expected);
 });

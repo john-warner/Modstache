@@ -9,7 +9,7 @@ var $$tache = function() {
 
     'use strict';
 
-    var version = '0.8.9';
+    var version = '0.9.0';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -144,10 +144,12 @@ var $$tache = function() {
             stached.unshift(dom);
         }
         stached.forEach((e) => {
+            let status = { removed: false };
+
             if (!processed.includes(e)) {
                 let assignments = e.getAttribute(options.stache).split(';');
 
-                assignments.forEach((assignment) => {
+                assignments.some((assignment) => {
                     var target = assignment.split(':');
                     var attribute = null;
                     var ss;
@@ -162,12 +164,19 @@ var $$tache = function() {
                     if (propDetail != null) {
                         var value = propDetail.parent[propDetail.propertyName]; // GetValue(data, ss);
                         if (typeof value !== 'undefined') {
-                            if (attribute == null && translate && translate.hasOwnProperty(ss))
-                                attribute = translate[ss];
+                            if (attribute && attribute[0] === '{') { // special directive
+                                ProcessDirective(attribute, e, value, propDetail, options, processed, status)
+                            }
+                            else {
+                                if (attribute == null && translate && translate.hasOwnProperty(ss))
+                                    attribute = translate[ss];
 
-                            processed.push(FillElementWithData(e, attribute, value, propDetail, options));
+                                processed.push(FillElementWithData(e, attribute, value, propDetail, options));
+                            }
                         }
                     }
+
+                    return status.removed;
                 });
                 if (options.removeStache)
                     e.removeAttribute(options.stache);
@@ -175,6 +184,25 @@ var $$tache = function() {
         });
 
         return dom;
+    }
+
+    function ProcessDirective(directive, dom, value, propDetail, options, processed, status) {
+        if (directive === '{if}') {
+            let shown = GetDataValue(value, dom, GetStacheInfo(propDetail));
+            if (!shown) { // remove dom and 
+                RemoveElement(dom, processed, options);
+                status.removed = true;
+           }
+        }
+    }
+
+    function RemoveElement(dom, processed, options) {
+        let stacheSelector = GetStacheAttribute(options);
+        var stached = [...dom.querySelectorAll("["+stacheSelector+"]")]; // getStached(dom,options.stacheAttribute);
+
+        if (dom.parentNode)
+            dom.parentNode.removeChild(dom);
+        processed.push(...stached);
     }
 
     function FillElementWithData(element, attribute, data, propDetail, options) {
@@ -245,7 +273,7 @@ var $$tache = function() {
         for (let i=0; i < assignments.length; i++) {
             let assignment = assignments[i];
             let specifier = assignment.split(':');
-            if (specifier.length > 1 && specifier[0] === 'template') {
+            if (specifier.length > 1 && specifier[0] === '{template}') {
                 templateSpecifier =  specifier[1];
             }
         }
