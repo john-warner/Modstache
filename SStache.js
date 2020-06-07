@@ -281,13 +281,13 @@ var $$tache = function() {
         if (element.hasAttribute(attribute)) {
             updater = () => { 
                 let value = element.getAttribute(attribute);
-                propDetail.parent[modelName] = value; 
+                propDetail.parent[propDetail.propertyName] = value; 
             }
         }
         else {
             updater = () => {
                 let value = element[attribute];
-                propDetail.parent[modelName] = value; 
+                propDetail.parent[propDetail.propertyName] = value; 
             }
         }
 
