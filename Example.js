@@ -40,6 +40,10 @@ var SimpleExample = function() {
         { message: 'Test 2' }
     ]};
 
+    var formModel = {
+        message: 'Enter message'
+    };
+
     var GetDeleteOptionHandler = (data,array) => () => { let i=array.indexOf(data); array.splice(i,1); };
     var GetPositionOptionHandler = (data,array) => () => { let i=array.indexOf(data); array[i] = GetOption(i+1); };
     var GetOption = (i) => { return { value: i, 
@@ -81,6 +85,7 @@ var SimpleExample = function() {
         ShowTime();
         TestArray();
         ShowSelect();
+        SetupForm();
      }
 
     function PopulateHead() {
@@ -173,6 +178,11 @@ var SimpleExample = function() {
         var template = $$.bind("#optionsTemplate");
         var container = $$.bind("#options");
         container.$$.append($$tache.fill(template.$$.copy(), selectOptions, { removeStache: true }));
+    }
+
+    function SetupForm() {
+        let form = $$.bind('#form');
+        $$tache.fill(form, formModel, { removeStache: true });
     }
 
     return {

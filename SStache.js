@@ -9,16 +9,16 @@ var $$tache = function() {
 
     'use strict';
 
-    var version = '0.9.0';
+    var version = '0.9.1';
   
     var exports = { version: version };
     var defaultOptions = {
-        removeStache: false,
-        escape: true,
-        translate: null,
-        alwaysSetTranslatedProperty: false,
-        reactive: true,
-        stache: '{}'
+        removeStache: false, // remove staching attribute in element
+        escape: true, // prevent script insertion
+        translate: null, // map model to element
+        alwaysSetTranslatedProperty: false, // ensure element has attribute defined
+        reactive: true, // changes to model are reflected in elements
+        stache: '{}' // staching attribute name
     };
     const PlaceholderTag = 'slot';
 
@@ -153,12 +153,19 @@ var $$tache = function() {
                     var target = assignment.split(':');
                     var attribute = null;
                     var ss;
+                    var eventUpdateProperty = null;
+
                     if (target.length > 1) {
                         attribute = target[0];
                         ss = target[1];
                     }
                     else {
                         ss = assignment;
+                    }
+                    if (ss.includes('>')) {
+                        let updateFields = ss.split('>');
+                        eventUpdateProperty = updateFields[0];
+                        ss = updateFields[1];
                     }
                     var propDetail = GetPropertyDetail(data, data, ss, baseArray);
                     if (propDetail != null) {
@@ -171,9 +178,14 @@ var $$tache = function() {
                                 if (attribute == null && translate && translate.hasOwnProperty(ss))
                                     attribute = translate[ss];
 
-                                processed.push(FillElementWithData(e, attribute, value, propDetail, options));
+                                    if (eventUpdateProperty !== null) {
+                                        updatePropertyOnEvent(attribute, e, eventUpdateProperty, ss, propDetail, options);
+                                    }
+                                    else {
+                                        processed.push(FillElementWithData(e, attribute, value, propDetail, options));
+                                    }
                             }
-                        }
+                         }
                     }
 
                     return status.removed;
@@ -257,7 +269,32 @@ var $$tache = function() {
             }
             else if (translated && options.alwaysSetTranslatedProperty)
                 AssignProperty(element, tkey, dataValue, propDetail, info, options);
+        }
+    }
+
+    function updatePropertyOnEvent(event, element, attribute, modelName, propDetail, options) {
+        let processed = [element];
+        let updater;
+        var info = GetStacheInfo(propDetail);
+        let settings = Object.assign({}, options);
+       
+        if (element.hasAttribute(attribute)) {
+            updater = () => { 
+                let value = element.getAttribute(attribute);
+                propDetail.parent[modelName] = value; 
             }
+        }
+        else {
+            updater = () => {
+                let value = element[attribute];
+                propDetail.parent[modelName] = value; 
+            }
+        }
+
+        element[event] = updater;
+        //AssignProperty(element, event, updater, propDetail, info, settings);
+
+        return processed;
     }
 
     function CreateAndFillElements(element, models, propDetail, options) {

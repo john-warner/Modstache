@@ -140,6 +140,24 @@ test('Test reactive', function (assert) {
     assert.deepEqual(result, expected);
 });
 
+// test('Test input change', function (assert) {
+//     // var html = '<input type="text" {}="onchange:value>message" />';
+//     // var template = document.createElement("template");
+//     var data = { message: '' };
+
+//     // template.innerHTML = html;
+//     var input = document.querySelector('#inputTest');
+//     var dom = $$tache.fill(input, data, { removeStache: true });
+//     //var input = dom.querySelector('input');
+    
+//     input.focus();
+//     input.value = 'Hello';
+//     input.blur();
+
+//     var result = data.message;
+//     var expected = "Hello";
+//     assert.deepEqual(result, expected);
+// });
 
 test('Test SStache override default attribute', function (assert) {
     var html = '<div SS="value;class:class;" class="">{{value}}</div>';

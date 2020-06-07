@@ -197,6 +197,18 @@ The following methods can be used to clear the reactive nature of the data:
 ```
 The UI can be filled again with the new object to make it reactive.
 
+#### Modify model when form changes
+
+The reactive feature for SStache is one way, meaning that UI elements are modified when the data is changed. It is possible to modify
+the model data when a UI form element is modified by tying an event, such as onchange, to a function that modified the model member.
+This can be handled with the SStache specifier by assigning the event to a property/data pairing using '>' as a separator.
+
+This HTML will modify the message property of the data when the input text is changed:
+ ```html
+    <input {}="onchange:value>message" />
+```
+
+
 ### $$tache.options
 
 The following options can be defined through $$tache.options
