@@ -278,15 +278,15 @@ var $$tache = function() {
         var info = GetStacheInfo(propDetail);
         let settings = Object.assign({}, options);
        
-        if (element.hasAttribute(attribute)) {
-            updater = () => { 
-                let value = element.getAttribute(attribute);
+        if (attribute in element) {
+            updater = () => {
+                let value = element[attribute];
                 propDetail.parent[propDetail.propertyName] = value; 
             }
         }
         else {
-            updater = () => {
-                let value = element[attribute];
+            updater = () => { 
+                let value = element.getAttribute(attribute);
                 propDetail.parent[propDetail.propertyName] = value; 
             }
         }
