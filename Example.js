@@ -29,10 +29,10 @@ var SimpleExample = function() {
 
     var message = { counter: 0, 
             message: 'Hello', 
-            change: (i) => () => { i.data.counter++; Object.assign(i.data, { message: 'You pressed the button ' + i.data.counter + ' times.' }); /* data.message = 'Goodbye'; */ }};
+            change: (ctx) => () => { ctx.parent.counter++; Object.assign(ctx.parent, { message: 'You pressed the button ' + ctx.parent.counter + ' times.' }); /* data.message = 'Goodbye'; */ }};
 
     var time = { time: () => { return 'The current time is ' + (new Date()).toLocaleTimeString(); },
-                 change: (i) => () => i.data.time = i.data.time };
+                 change: (ctx) => () => ctx.parent.time = ctx.parent.time };
 
     var testMessages = {
         messages: [
@@ -48,23 +48,23 @@ var SimpleExample = function() {
     var GetPositionOptionHandler = (data,array) => () => { let i=array.indexOf(data); array[i] = GetOption(i+1); };
     var GetOption = (i) => { return { value: i, 
                                       text: 'Option ' + i, 
-                                      deleteOption: (i) => GetDeleteOptionHandler(i.data,i.array),
-                                      positionOption: (i) => GetPositionOptionHandler(i.data,i.array) 
+                                      deleteOption: (ctx) => GetDeleteOptionHandler(ctx.parent,ctx.array),
+                                      positionOption: (ctx) => GetPositionOptionHandler(ctx.parent,ctx.array) 
                                     }};
     var selectOptions = {
-        addOption: (info) => () => {var i=info.data.options.length+1; info.data.options.push(GetOption(i))},
-        prependOption: (info) => () => {var i=info.data.options.length+1; info.data.options.unshift(GetOption(i))},
-        clearOptions: (info) => () => info.data.options.length = 0,
+        addOption: (ctx) => () => {var i=ctx.parent.options.length+1; ctx.parent.options.push(GetOption(i))},
+        prependOption: (ctx) => () => {var i=ctx.parent.options.length+1; ctx.parent.options.unshift(GetOption(i))},
+        clearOptions: (ctx) => () => ctx.parent.options.length = 0,
         options: [
         { value: 1, 
           text: 'Option 1', 
-          deleteOption: (info) => GetDeleteOptionHandler(info.data,info.array),
-          positionOption: (info) => GetPositionOptionHandler(info.data,info.array)
+          deleteOption: (ctx) => GetDeleteOptionHandler(ctx.parent,ctx.array),
+          positionOption: (ctx) => GetPositionOptionHandler(ctx.parent,ctx.array)
         },
         { value: 2, 
           text: 'Option 2', 
-          deleteOption: (info) => GetDeleteOptionHandler(info.data,info.array),
-          positionOption: (info) => GetPositionOptionHandler(info.data,info.array)
+          deleteOption: (ctx) => GetDeleteOptionHandler(ctx.parent,ctx.array),
+          positionOption: (ctx) => GetPositionOptionHandler(ctx.parent,ctx.array)
         }
     ]};
 

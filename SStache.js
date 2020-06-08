@@ -85,7 +85,7 @@ var $$tache = function() {
     const fragment = (html) => { var tpl = document.createElement('template'); tpl.innerHTML = html; return tpl.content;  };
     const isPlainObject = (o) => Object.prototype.toString.call(o) === '[object Object]';
     const isFunction = (f) => typeof f === 'function';
-    const GetStacheInfo = (e,propDetail) => { return { element: e, root: propDetail.root, data: propDetail.parent, key: propDetail.propertyName, array: propDetail.array }; };
+    const GetStacheContext = (e,propDetail) => { return { element: e, root: propDetail.root, parent: propDetail.parent, key: propDetail.propertyName, array: propDetail.array }; };
     const GetStacheAttribute = (o) => o.stache.replace('{','\\{').replace('}','\\}');
 
     function Fill(template, data, options = defaultOptions) {
@@ -200,7 +200,7 @@ var $$tache = function() {
 
     function ProcessDirective(directive, dom, value, propDetail, options, processed, status) {
         if (directive === '{if}') {
-            let shown = GetDataValue(value, dom, GetStacheInfo(dom,propDetail));
+            let shown = GetDataValue(value, dom, GetStacheContext(dom,propDetail));
             if (!shown) { // remove dom and 
                 RemoveElement(dom, processed, options);
                 status.removed = true;
@@ -218,7 +218,7 @@ var $$tache = function() {
     }
 
     function FillElementWithData(element, attribute, data, propDetail, options) {
-        var info = GetStacheInfo(element,propDetail);
+        var info = GetStacheContext(element,propDetail);
         var value = GetDataValue(data, element, info);
         let processed = [element];
         let stacheSelector = GetStacheAttribute(options);
@@ -253,7 +253,7 @@ var $$tache = function() {
             let tkey = key;
             let translated = false;
             var propDetail = GetPropertyDetail(data, data, key);
-            var info = GetStacheInfo(element,propDetail);
+            var info = GetStacheContext(element,propDetail);
             let dataValue = GetDataValue(data[key], element, info);
 
             if (translate && translate.hasOwnProperty(key)) {
@@ -275,7 +275,7 @@ var $$tache = function() {
     function updatePropertyOnEvent(event, element, attribute, modelName, propDetail, options) {
         let processed = [element];
         let updater;
-        var info = GetStacheInfo(element,propDetail);
+        var info = GetStacheContext(element,propDetail);
         let settings = Object.assign({}, options);
        
         if (attribute in element) {
@@ -486,7 +486,7 @@ var $$tache = function() {
 
     function GetDataValue(data, element, stacheInfo) {
         //return (isFunction(data)) ? data(element, stacheInfo.parent, stacheInfo) : data;
-        return (isFunction(data)) ? data(stacheInfo) : data;
+        return (isFunction(data)) ? data(stacheInfo, element, stacheInfo.parent) : data;
     }
 
     function SetDefaultOptions(options) {

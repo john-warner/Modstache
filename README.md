@@ -167,35 +167,37 @@ HTML
 
 Javascript
  ```javascript
-    var model = {
-         form: { id: 1 },
+    var state = {
+         model: { id: 1 },
          btn: {
-             label: (info) => { return (info.root.form.id !== 0) ? 'Update' : info.element.innerHTML},
-             onclick: (info) => () => alert('Button has been clicked')
+             label: (ctx, element, parent) => { return (ctx.root.model.id !== 0) ? 'Update' : ctx.element.innerHTML},
+             onclick: (ctx, element, parent) => () => alert('Button has been clicked')
           }
     };
 ```
 
-Functions in the data are passed a single object parameter with the following properties:
+Functions in the data are passed an object parameter with the context. It has the following properties:
 
 * element - the DOM element being processed
 * root - the data object passed into SStache
-* data - the data object containing the data function
+* parent - the parent object containing the data function
 * key - the key in data containing the data function
 * array - the containing array, if used
 
-In the example above, info would contain the following values for the btn.label specifier:
+In the example above, ctx would contain the following values for the btn.label specifier:
 
 Javascript
  ```javascript
-    info = {
+    ctx = {
          element: button_DOM_Element,
-         root: model,
-         data: model.btn,
+         root: state,
+         parent: state.btn,
          key: 'label',
          array: null
     };
 ```
+
+Additional parameters for the element and parent values are passed to the function to simplify access.
 
 #### Modify using reactive data
 
