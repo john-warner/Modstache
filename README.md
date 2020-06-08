@@ -154,6 +154,49 @@ Javascript
     var address = { name: { text: 'Jill', style:'color:cyan;'}, address: '1234 Maple', city: 'Anytown', state: 'US', zipcode: '80000' };
 ```
 
+#### Calculating a data value
+
+Data values can be provided by a function instead of a direct value. For example, the following shows how to modify a button's text
+depending on other values in the provided data
+
+
+HTML
+ ```html
+    <button {}="btn.label;onclick:btn.onclick">Create</button>
+```
+
+Javascript
+ ```javascript
+    var model = {
+         form: { id: 1 },
+         btn: {
+             label: (info) => { return (info.root.form.id !== 0) ? 'Update' : info.element.innerHTML},
+             onclick: (info) => () => alert('Button has been clicked')
+          }
+    };
+```
+
+Functions in the data are passed a single object parameter with the following properties:
+
+* element - the DOM element being processed
+* root - the data object passed into SStache
+* data - the data object containing the data function
+* key - the key in data containing the data function
+* array - the containing array, if used
+
+In the example above, info would contain the following values for the btn.label specifier:
+
+Javascript
+ ```javascript
+    info = {
+         element: button_DOM_Element,
+         root: model,
+         data: model.btn,
+         key: 'label',
+         array: null
+    };
+```
+
 #### Modify using reactive data
 
 The default fill configuration is to make the data reactive.  This means that after the initial fill, the UI will be updated automatically on changes to the data. For example, with the following HTML and Javascript:

@@ -29,10 +29,10 @@ var SimpleExample = function() {
 
     var message = { counter: 0, 
             message: 'Hello', 
-            change: (e,data) => () => { data.counter++; Object.assign(data, { message: 'You pressed the button ' + data.counter + ' times.' }); /* data.message = 'Goodbye'; */ }};
+            change: (i) => () => { i.data.counter++; Object.assign(i.data, { message: 'You pressed the button ' + i.data.counter + ' times.' }); /* data.message = 'Goodbye'; */ }};
 
     var time = { time: () => { return 'The current time is ' + (new Date()).toLocaleTimeString(); },
-                 change: (e,data) => () => data.time = data.time };
+                 change: (i) => () => i.data.time = i.data.time };
 
     var testMessages = {
         messages: [
@@ -48,23 +48,23 @@ var SimpleExample = function() {
     var GetPositionOptionHandler = (data,array) => () => { let i=array.indexOf(data); array[i] = GetOption(i+1); };
     var GetOption = (i) => { return { value: i, 
                                       text: 'Option ' + i, 
-                                      deleteOption: (e,data,info) => GetDeleteOptionHandler(data,info.array),
-                                      positionOption: (e,data,info) => GetPositionOptionHandler(data,info.array) 
+                                      deleteOption: (i) => GetDeleteOptionHandler(i.data,i.array),
+                                      positionOption: (i) => GetPositionOptionHandler(i.data,i.array) 
                                     }};
     var selectOptions = {
-        addOption: (e,data) => () => {var i=data.options.length+1; data.options.push(GetOption(i))},
-        prependOption: (e,data) => () => {var i=data.options.length+1; data.options.unshift(GetOption(i))},
-        clearOptions: (e,data) => () => data.options.length = 0,
+        addOption: (info) => () => {var i=info.data.options.length+1; info.data.options.push(GetOption(i))},
+        prependOption: (info) => () => {var i=info.data.options.length+1; info.data.options.unshift(GetOption(i))},
+        clearOptions: (info) => () => info.data.options.length = 0,
         options: [
         { value: 1, 
           text: 'Option 1', 
-          deleteOption: (e,data,info) => GetDeleteOptionHandler(data,info.array),
-          positionOption: (e,data,info) => GetPositionOptionHandler(data,info.array)
+          deleteOption: (info) => GetDeleteOptionHandler(info.data,info.array),
+          positionOption: (info) => GetPositionOptionHandler(info.data,info.array)
         },
         { value: 2, 
           text: 'Option 2', 
-          deleteOption: (e,data,info) => GetDeleteOptionHandler(data,info.array),
-          positionOption: (e,data,info) => GetPositionOptionHandler(data,info.array)
+          deleteOption: (info) => GetDeleteOptionHandler(info.data,info.array),
+          positionOption: (info) => GetPositionOptionHandler(info.data,info.array)
         }
     ]};
 
