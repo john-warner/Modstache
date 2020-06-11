@@ -9,7 +9,7 @@ var $$tache = function() {
 
     'use strict';
 
-    var version = '0.9.2';
+    var version = '0.9.3';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -277,17 +277,24 @@ var $$tache = function() {
         let updater;
         var info = GetStacheContext(element,propDetail);
         let settings = Object.assign({}, options);
+        let propFunction = isFunction(propDetail.parent[propDetail.propertyName]);
        
         if (attribute in element) {
             updater = () => {
                 let value = element[attribute];
-                propDetail.parent[propDetail.propertyName] = value; 
+                if (propFunction)
+                    propDetail.parent[propDetail.propertyName](value, info);
+                else
+                    propDetail.parent[propDetail.propertyName] = value; 
             }
         }
         else {
             updater = () => { 
                 let value = element.getAttribute(attribute);
-                propDetail.parent[propDetail.propertyName] = value; 
+                if (propFunction)
+                    propDetail.parent[propDetail.propertyName](value, info);
+                else
+                    propDetail.parent[propDetail.propertyName] = value; 
             }
         }
 

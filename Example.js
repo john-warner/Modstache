@@ -44,6 +44,11 @@ var SimpleExample = function() {
         message: 'Enter message'
     };
 
+    var form2Model = {
+        message: 'Enter message',
+        procMessage: (m,c) => c.parent.message = m
+    };
+
     var GetDeleteOptionHandler = (data,array) => () => { let i=array.indexOf(data); array.splice(i,1); };
     var GetPositionOptionHandler = (data,array) => () => { let i=array.indexOf(data); array[i] = GetOption(i+1); };
     var GetOption = (i) => { return { value: i, 
@@ -86,6 +91,7 @@ var SimpleExample = function() {
         TestArray();
         ShowSelect();
         SetupForm();
+        SetupForm2();
      }
 
     function PopulateHead() {
@@ -183,6 +189,11 @@ var SimpleExample = function() {
     function SetupForm() {
         let form = $$.bind('#form');
         $$tache.fill(form, formModel, { removeStache: true });
+    }
+
+    function SetupForm2() {
+        let form = $$.bind('#form2');
+        $$tache.fill(form, form2Model, { removeStache: true });
     }
 
     return {

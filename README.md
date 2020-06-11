@@ -253,6 +253,8 @@ This HTML will modify the message property of the data when the input text is ch
     <input {}="onchange:value>message" />
 ```
 
+You can also assign the property or attribute to a function in the model. The function will be passed the property value and the SStache context.
+
 
 ### $$tache.options
 
