@@ -112,7 +112,8 @@ The stache attribute can be formatted as follows:
     <div {}="text;property1:prop1Value;property2:prop2Value;">This is replaced by default</div>
 ```
 
-The names for "text", "property1", etc can be changed to match the data object properties.
+The names for "text", "property1", etc can be changed to match the data object properties. The element property to be assigned
+can be a property of a child object, for example "style.color:colorValue".
 
 The data object would be setup as follows:
 
@@ -275,5 +276,15 @@ The passed DOM fragment is modified and returned or a new fragment is created fr
 * alwaysSetTranslatedProperty (false) - make sure property is defined if specified in translation object
 * reactive (true) - modify data object to affect target fragment when changed
 * stache ('{}') - name of the attribute to use for stache replacement specification
+
+
+### Directives
+
+Directives are properties in the stache attribute that require special handling. Directives are in the format
+"{directive}". The following directives are supported:
+
+* {if} - the element is rendered or removed based on the model value associated with the "if" directive
+* {oninit} - the associated function is called after the element has been processed
+* {template} - specifies a template to use for an array element
 
 

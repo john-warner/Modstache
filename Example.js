@@ -13,12 +13,12 @@ var SimpleExample = function() {
         { user: {name:'Jack', value:'jack'} }
     ];
     var addresses = [
-        { userid: { id: 'U1' }, name: 'John', 
+        { userid: { id: 'U1' }, name: 'John',  nameColor: 'blue', init: (ctx) => console.log('init address ' + ctx.parent.name),
           address: '1234 Maple', city: 'Phoenix', state: 'AZ', zipcode: '85000',
           contact: { name: 'Ken', phone: '555-5555' }},
-        { userid: { id: 'U2' }, name: 'Rand', 
+        { userid: { id: 'U2' }, name: 'Rand',   nameColor: 'red', init: (ctx) => console.log('init address ' + ctx.parent.name),
           address: '1st Street Main', city: 'New York City', state: 'NY', 
-          zipcode: { style: 'color:red;', text: () => '01010', storage: 'hello'},
+          zipcode: { style: 'color:orangered;', text: () => '01010', storage: 'hello'},
           contact: { name: { text: 'Jill', style:'color:cyan;'}, phone: '555-0000' }
         }
     ];
@@ -29,10 +29,16 @@ var SimpleExample = function() {
 
     var message = { counter: 0, 
             message: 'Hello', 
-            change: (ctx) => () => { ctx.parent.counter++; Object.assign(ctx.parent, { message: 'You pressed the button ' + ctx.parent.counter + ' times.' }); /* data.message = 'Goodbye'; */ }};
+            change: (ctx) => () => { ctx.parent.counter++; Object.assign(ctx.parent, { message: 'You pressed the button ' + ctx.parent.counter + ' times.' }); }};
 
-    var time = { time: () => { return 'The current time is ' + (new Date()).toLocaleTimeString(); },
-                 change: (ctx) => () => ctx.parent.time = ctx.parent.time };
+    var time = { time: (ctx) => {
+                    setInterval(() => { ctx.parent.time = ctx.parent.time; }, 1000); // set up automatic update for reactive assignment
+                    ctx.parent.time = () => { return 'The current time is ' + (new Date()).toLocaleTimeString(); };
+                    return ctx.parent.time();
+                    },
+                 change: (ctx) => {
+                    return () => ctx.parent.time = ctx.parent.time 
+                } };
 
     var testMessages = {
         messages: [
@@ -111,7 +117,9 @@ var SimpleExample = function() {
         var container = $$.bind("#addresses");
         var translate = { text: 'textContent', storage: 'data-storage', id: 'id' }
         //addresses.forEach((a) => { container.$$.append($$tache.fill(template.$$.copy(), a, { translate: translate }))});
-        container.$$.append($$tache.fill(template.$$.copy(), {addresses:addresses}, { translate: translate, reactive: false, removeStache: true }));
+        container.$$.append($$tache.fill(template.$$.copy(), {addresses:addresses}, { translate: translate, reactive: true, removeStache: true }));
+        addresses[1].zipcode.style += 'background-color:lightblue;'; // test reactive
+        addresses[0].nameColor = 'orange';
     }
 
     function ShowBooks() {
@@ -131,7 +139,7 @@ var SimpleExample = function() {
         var template = $$.bind("#timeTemplate");
         var container = $$.bind("#time");
         container.$$.append($$tache.fill(template.$$.copy(), time, { removeStache: true }));
-        setInterval(() => { time.time = time.time; }, 1000);
+        //setInterval(() => { time.time = time.time; }, 1000);
     }
 
     function TestArray() {

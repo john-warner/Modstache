@@ -20,8 +20,8 @@
         <li value="{{user.value}}">{{user.name}}</li>
     </template>
     <template id="addressTemplate">
-        <div {}="addresses;userid" style="margin-bottom:10px;">
-            <b>Name:</b> <span {}="name"></span><br />
+        <div {}="addresses;userid;{oninit}:init" style="margin-bottom:10px;">
+            <b>Name:</b> <span {}="name;style.color:nameColor;"></span><br />
             <b>Address:</b> <span {}="address"></span><br />
             <b>City:</b> <span {}="city"></span>, <span {}="state"></span> <b>Zipcode:</b> <span {}="zipcode" data-storage=""></span><br />
             <b>Contact:</b><br />
@@ -75,10 +75,10 @@
     <div id="time"></div>
     <div id="options"></div>
     <div id="form">
-        <input {}="value:message;onchange:value>message" type="text" value="Hello"><span {}="message"></span>
+        Form changes can update properties: <input {}="value:message;onchange:value>message" type="text" value="Hello"><span {}="message"></span>
     </div>
     <div id="form2">
-        <input {}="value:message;onchange:value>procMessage" type="text" value="Hello"><span {}="message"></span>
+        Form changes can call a function: <input {}="value:message;onchange:value>procMessage" type="text" value="Hello"><span {}="message"></span>
     </div>
 </body>
 </html>

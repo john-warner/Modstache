@@ -9,7 +9,7 @@ var $$tache = function() {
 
     'use strict';
 
-    var version = '0.9.3';
+    var version = '0.9.4';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -18,9 +18,21 @@ var $$tache = function() {
         translate: null, // map model to element
         alwaysSetTranslatedProperty: false, // ensure element has attribute defined
         reactive: true, // changes to model are reflected in elements
-        stache: '{}' // staching attribute name
+        stache: '{}', // staching attribute name
+        events: { // events filled in by attribute or with default option
+            oninit: null,
+            onremoved: null,
+            onupdated: null
+        }
     };
     const PlaceholderTag = 'slot';
+    const Directives = {
+        if: '{if}',
+        oninit: '{oninit}',
+        // onremoved: '{onremoved}', // not working
+        // onupdated: '{onupdated}', // not working
+        template: '{template}'
+    };
 
     function GetValue(obj, path) {
         var current;
@@ -79,13 +91,14 @@ var $$tache = function() {
     function GetAllOptionSettings(options) {
         //return Object.assign({...defaultOptions}, options); // not supported by edge
         let settings = Object.assign({}, defaultOptions);
+        options.events = Object.assign({}, defaultOptions.events); // copy default events;
         return Object.assign(settings, options); // make copy of options with all options
     }
 
     const fragment = (html) => { var tpl = document.createElement('template'); tpl.innerHTML = html; return tpl.content;  };
     const isPlainObject = (o) => Object.prototype.toString.call(o) === '[object Object]';
     const isFunction = (f) => typeof f === 'function';
-    const GetStacheContext = (e,propDetail) => { return { element: e, root: propDetail.root, parent: propDetail.parent, key: propDetail.propertyName, array: propDetail.array }; };
+    const GetStacheContext = (e,propDetail,options) => { return { element: e, root: propDetail.root, parent: propDetail.parent, key: propDetail.propertyName, array: propDetail.array, events: options.events }; };
     const GetStacheAttribute = (o) => o.stache.replace('{','\\{').replace('}','\\}');
 
     function Fill(template, data, options = defaultOptions) {
@@ -144,6 +157,7 @@ var $$tache = function() {
             stached.unshift(dom);
         }
         stached.forEach((e) => {
+            options = GetAllOptionSettings(options);
             let status = { removed: false };
 
             if (!processed.includes(e)) {
@@ -182,7 +196,7 @@ var $$tache = function() {
                                         updatePropertyOnEvent(attribute, e, eventUpdateProperty, ss, propDetail, options);
                                     }
                                     else {
-                                        processed.push(FillElementWithData(e, attribute, value, propDetail, options));
+                                        processed.push(FillElementWithData(e, attribute, value, propDetail, options, status));
                                     }
                             }
                          }
@@ -192,6 +206,9 @@ var $$tache = function() {
                 });
                 if (options.removeStache)
                     e.removeAttribute(options.stache);
+                if (options.events.oninit) {
+                    options.events.oninit(e);
+                }
             }
         });
 
@@ -199,14 +216,44 @@ var $$tache = function() {
     }
 
     function ProcessDirective(directive, dom, value, propDetail, options, processed, status) {
-        if (directive === '{if}') {
-            let shown = GetDataValue(value, dom, GetStacheContext(dom,propDetail));
-            if (!shown) { // remove dom and 
-                RemoveElement(dom, processed, options);
-                status.removed = true;
-           }
+        switch (directive) {
+            case Directives.if:
+                processIfDirective(dom, value, propDetail, options, processed, status);
+                break;
+            case Directives.oninit:
+                processOnInitDirective(dom, value, propDetail, options, processed, status);
+                break;
+            // case Directives.onremoved:
+            //     processOnRemovedDirective(dom, value, propDetail, options, processed, status);
+            //     break;
+            // case Directives.onupdated:
+            //     processOnUpdatedDirective(dom, value, propDetail, options, processed, status);
+            //     break;
         }
     }
+
+    function processIfDirective(dom, value, propDetail, options, processed, status) {
+        let shown = GetDataValue(value, dom, GetStacheContext(dom,propDetail,options));
+        if (!shown) { // remove dom and 
+            RemoveElement(dom, processed, options);
+            status.removed = true;
+       }
+    }
+
+    function processOnInitDirective(dom, value, propDetail, options, processed, status) {
+        var info = GetStacheContext(dom,propDetail,options);
+        options.events.oninit = (e) => { value(info, e); };
+    }
+
+    // function processOnRemovedDirective(dom, value, propDetail, options, processed, status) {
+    //     var info = GetStacheContext(dom,propDetail,options);
+    //     options.events.onremoved = (e) => { value(info, e); };
+    // }
+
+    // function processOnUpdatedDirective(dom, value, propDetail, options, processed, status) {
+    //     var info = GetStacheContext(dom,propDetail,options);
+    //     options.events.onupdated = (e) => { value(info, e); };
+    // }
 
     function RemoveElement(dom, processed, options) {
         let stacheSelector = GetStacheAttribute(options);
@@ -217,8 +264,8 @@ var $$tache = function() {
         processed.push(...stached);
     }
 
-    function FillElementWithData(element, attribute, data, propDetail, options) {
-        var info = GetStacheContext(element,propDetail);
+    function FillElementWithData(element, attribute, data, propDetail, options, status) {
+        var info = GetStacheContext(element,propDetail,options);
         var value = GetDataValue(data, element, info);
         let processed = [element];
         let stacheSelector = GetStacheAttribute(options);
@@ -228,14 +275,16 @@ var $$tache = function() {
         }
         else if (Array.isArray(value)) {
             processed.push(element.querySelectorAll("["+stacheSelector+"]")); // children have been processed
-            CreateAndFillElements(element, value, propDetail, options);
+            CreateAndFillElements(element, value, propDetail, options, processed, status);
         }
         else {
             if (attribute) {
                 if (element.hasAttribute(attribute))
                     AssignAttribute(element, attribute, value, propDetail, info, options);
-                else
-                    AssignProperty(element, attribute, value, propDetail, info, options);
+                else {
+                    var elemProperty = GetPropertyDetail(element, element, attribute, null);
+                    AssignProperty(elemProperty, value, propDetail, info, options);
+                }
             }
             else if (attribute === '')
                 AssignNothing(element, propDetail, info, options);  // useful for external initialization of element
@@ -253,29 +302,33 @@ var $$tache = function() {
             let tkey = key;
             let translated = false;
             var propDetail = GetPropertyDetail(data, data, key);
-            var info = GetStacheContext(element,propDetail);
+            var info = GetStacheContext(element,propDetail,options);
             let dataValue = GetDataValue(data[key], element, info);
 
             if (translate && translate.hasOwnProperty(key)) {
                 tkey = translate[key];
                 translated = true;
             }
+            var elemProperty = GetPropertyDetail(element, element, tkey, null);
 
-            if (typeof element[tkey] !== 'undefined') {
-                AssignProperty(element, tkey, dataValue, propDetail, info, options);
+            if (elemProperty !== null) {
+                AssignProperty(elemProperty, dataValue, propDetail, info, options);
             }
             else if (element.hasAttribute(tkey)) {
                 AssignAttribute(element, tkey, dataValue, propDetail, info, options);
             }
-            else if (translated && options.alwaysSetTranslatedProperty)
-                AssignProperty(element, tkey, dataValue, propDetail, info, options);
+            else if (translated && options.alwaysSetTranslatedProperty) {
+                element[tkey] = dataValue;
+                elemProperty = GetPropertyDetail(element, element, tkey, null);
+                AssignProperty(elemProperty, dataValue, propDetail, info, options);
+            }
         }
     }
 
     function updatePropertyOnEvent(event, element, attribute, modelName, propDetail, options) {
         let processed = [element];
         let updater;
-        var info = GetStacheContext(element,propDetail);
+        var info = GetStacheContext(element,propDetail,options);
         let settings = Object.assign({}, options);
         let propFunction = isFunction(propDetail.parent[propDetail.propertyName]);
        
@@ -304,7 +357,7 @@ var $$tache = function() {
         return processed;
     }
 
-    function CreateAndFillElements(element, models, propDetail, options) {
+    function CreateAndFillElements(element, models, propDetail, options, processed, status) {
         let template = element.cloneNode(true);
         let parent = element.parentNode;
         let createdElements = [];
@@ -317,8 +370,17 @@ var $$tache = function() {
         for (let i=0; i < assignments.length; i++) {
             let assignment = assignments[i];
             let specifier = assignment.split(':');
-            if (specifier.length > 1 && specifier[0] === '{template}') {
-                templateSpecifier =  specifier[1];
+            if (specifier.length > 1 && specifier[0].length > 1 && specifier[0][0] === '{') {
+                if (specifier[0] === Directives.template) {
+                    templateSpecifier =  specifier[1];
+                }
+                else {
+                    let directiveDetail = GetPropertyDetail(propDetail.root, propDetail.parent, specifier[1], models);
+                    if (directiveDetail) {
+                        let value = directiveDetail.parent[directiveDetail.propertyName];
+                        ProcessDirective(specifier[0], element, value, directiveDetail, options, processed, status);                 
+                    }
+                }
             }
         }
 
@@ -337,7 +399,7 @@ var $$tache = function() {
 
         parent.insertBefore(fragment, element);
 
-        if (createdElements.length === 0) { // empty arrive so insert placeholder
+        if (createdElements.length === 0) { // empty array so insert placeholder
             context.placeholder = document.createElement(PlaceholderTag); // template element won't affect layout
             parent.insertBefore(context.placeholder, element);
         }
@@ -380,7 +442,7 @@ var $$tache = function() {
             parent: parent,
             elements: createdElements,
             models: models,
-            options: Object.assign({},options),
+            options: options,
             proxy: null, // real proxy to be added if reactive is enabled
             placeholder: null // placeholder element for empty list
         };
@@ -400,6 +462,8 @@ var $$tache = function() {
 
         for (let i=start; i<end; i++) {
             context.parent.removeChild(context.elements[i]);
+            // if (context.options.events.onremoved)
+            //     context.optionis.events.onremoved(context.elements[i]);
         }
         context.elements.splice(start, deleteCount);
     };
@@ -504,27 +568,40 @@ var $$tache = function() {
     function AssignAttribute(element, attribute, value, propDetail, info, options) {
         element.setAttribute(attribute, value);
         if (options.reactive) {
-            ChangeSetter(propDetail, (v) => { v= GetDataValue(v, element, info); element.setAttribute(attribute, v); return v; });
+            ChangeSetter(propDetail, (v) => { 
+                v= GetDataValue(v, element, info); 
+                element.setAttribute(attribute, v); 
+                // if (options.events.onupdated) options.events.onupdated(element.root);
+                return v; });
         }
     }
 
-    function AssignProperty(element, property, value, propDetail, info, options) {
-        element[property] = value;
+    function AssignProperty(elementProp, value, propDetail, info, options) {
+        elementProp.parent[elementProp.propertyName] = value;
         if (options.reactive) {
-            ChangeSetter(propDetail, (v) => { v = GetDataValue(v, element, info); element[property] =  v; return v; });
+            ChangeSetter(propDetail, (v) => { 
+                v = GetDataValue(v, elementProp.root, info); 
+                elementProp.parent[elementProp.propertyName] =  v;
+                // if (options.events.onupdated) options.events.onupdated(elementProp.root);
+                return v; });
         }
     }
 
     function AssignNothing(element, propDetail, info, options) {
         if (options.reactive) {
-            ChangeSetter(propDetail, (v) => { v = GetDataValue(v, element, info); return v; });
+            ChangeSetter(propDetail, (v) => { 
+                v = GetDataValue(v, element, info); 
+                return v; });
         }
     }
 
     function AssignText(element, value, propDetail, info, options) {
         element.textContent = value;
         if (options.reactive) {
-            ChangeSetter(propDetail, (v) => { v = GetDataValue(v, element, info); element.textContent =  v; return v; });
+            ChangeSetter(propDetail, (v) => { 
+                v = GetDataValue(v, element, info); 
+                element.textContent =  v; 
+                return v; });
         }
     }
 
