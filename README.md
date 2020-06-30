@@ -180,10 +180,11 @@ Javascript
 Functions in the data are passed an object parameter with the context. It has the following properties:
 
 * element - the DOM element being processed
-* root - the data object passed into SStache
+* root - the data object passed into SStache or the object in an array used to fill the template
 * parent - the parent object containing the data function
 * key - the key in data containing the data function
 * array - the containing array, if used
+* base - the original object passed into SStache
 
 In the example above, ctx would contain the following values for the btn.label specifier:
 
@@ -194,7 +195,8 @@ Javascript
          root: state,
          parent: state.btn,
          key: 'label',
-         array: null
+         array: null,
+         base: state
     };
 ```
 
@@ -286,5 +288,6 @@ Directives are properties in the stache attribute that require special handling.
 * {if} - the element is rendered or removed based on the model value associated with the "if" directive
 * {oninit} - the associated function is called after the element has been processed
 * {template} - specifies a template to use for an array element
+* {base} - Used to refer to the original object used to fill. Eg. {}="textContent:{base}.message"
 
 

@@ -9,7 +9,7 @@ var $$tache = function() {
 
     'use strict';
 
-    var version = '0.9.4';
+    var version = '0.9.5';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -49,8 +49,15 @@ var $$tache = function() {
         return current;
     }
 
-    function GetPropertyDetail(root, obj, path, baseArray) {
-        var detail = { root: root, parent: obj, propertyName: '', descriptor: null, array: baseArray };
+    function GetPropertyDetail(root, obj, path, baseArray, baseObject) {
+        var detail = {
+            base: (baseObject) ? baseObject : root,
+            root: root,
+            parent: obj,
+            propertyName: '',
+            descriptor: null,
+            array: baseArray
+        };
         var current;
         let missing = false;
         path.split('.').forEach((o) => {
@@ -98,7 +105,17 @@ var $$tache = function() {
     const fragment = (html) => { var tpl = document.createElement('template'); tpl.innerHTML = html; return tpl.content;  };
     const isPlainObject = (o) => Object.prototype.toString.call(o) === '[object Object]';
     const isFunction = (f) => typeof f === 'function';
-    const GetStacheContext = (e,propDetail,options) => { return { element: e, root: propDetail.root, parent: propDetail.parent, key: propDetail.propertyName, array: propDetail.array, events: options.events }; };
+    const GetStacheContext = (e, propDetail, options) => {
+        return {
+            element: e,
+            root: propDetail.root,
+            parent: propDetail.parent,
+            key: propDetail.propertyName,
+            array: propDetail.array,
+            events: options.events,
+            base: propDetail.base
+        };
+    };
     const GetStacheAttribute = (o) => o.stache.replace('{','\\{').replace('}','\\}');
 
     function Fill(template, data, options = defaultOptions) {
@@ -144,7 +161,7 @@ var $$tache = function() {
     
     }
 
-    function FillDOM(dom, data, options = defaultOptions, baseArray = null) {
+    function FillDOM(dom, data, options = defaultOptions, baseArray = null, baseObject = null) {
         options = GetAllOptionSettings(options);
 
         let stacheSelector = GetStacheAttribute(options);
@@ -153,6 +170,7 @@ var $$tache = function() {
         let processed = [];
         let stachedDOMroot = (dom instanceof DocumentFragment) ? null : dom.getAttribute(options.stache);
 
+        baseObject = baseObject || data;
         if (stachedDOMroot) {
             stached.unshift(dom);
         }
@@ -181,7 +199,14 @@ var $$tache = function() {
                         eventUpdateProperty = updateFields[0];
                         ss = updateFields[1];
                     }
-                    var propDetail = GetPropertyDetail(data, data, ss, baseArray);
+                    var propDetail = null;
+                    if (ss.startsWith('{base}.')) {
+                        ss = ss.replace('{base}.', '');
+                        propDetail = GetPropertyDetail(data, baseObject, ss, baseArray, baseObject);
+                    }
+                    else {
+                        propDetail = GetPropertyDetail(data, data, ss, baseArray, baseObject);
+                    }
                     if (propDetail != null) {
                         var value = propDetail.parent[propDetail.propertyName]; // GetValue(data, ss);
                         if (typeof value !== 'undefined') {
@@ -384,7 +409,7 @@ var $$tache = function() {
             }
         }
 
-        let context = GetFilledContext(template, templateSpecifier, parent, createdElements, models, options);
+        let context = GetFilledContext(template, templateSpecifier, parent, createdElements, models, options, propDetail.base);
 
         // replace with proxy before filling in case model functions need to change model
         if (options.reactive) {
@@ -394,7 +419,7 @@ var $$tache = function() {
 
         models.forEach((m) => {
             let dom = GetTemplate(context, m);
-            createdElements.push(CreateFilledElement(proxy, dom, m, fragment, null, options));
+            createdElements.push(CreateFilledElement(proxy, dom, m, fragment, null, options, context.base));
         });
 
         parent.insertBefore(fragment, element);
@@ -407,10 +432,10 @@ var $$tache = function() {
         parent.removeChild(element);
     }
 
-    function CreateFilledElement(modelArray, template, model, parent, nextElement, options) {
+    function CreateFilledElement(modelArray, template, model, parent, nextElement, options, base) {
         let e = template.cloneNode(true);
 
-        e = FillDOM(e, model, options, modelArray);
+        e = FillDOM(e, model, options, modelArray, base);
         if (nextElement)
             parent.insertBefore(e, nextElement);
         else
@@ -435,7 +460,7 @@ var $$tache = function() {
         return defaultTemplate;
     }
 
-    function GetFilledContext(template, templateSpecifier, parent, createdElements, models, options) {
+    function GetFilledContext(template, templateSpecifier, parent, createdElements, models, options, base) {
         return {
             template: template,
             templateSpecifier : templateSpecifier,
@@ -443,6 +468,7 @@ var $$tache = function() {
             elements: createdElements,
             models: models,
             options: options,
+            base: base,
             proxy: null, // real proxy to be added if reactive is enabled
             placeholder: null // placeholder element for empty list
         };
@@ -476,7 +502,7 @@ var $$tache = function() {
 
             models.forEach((m) => {
                 let dom = GetTemplate(context, m);
-                newElements.push(CreateFilledElement(context.proxy, dom, m, fragment, null, context.options));
+                newElements.push(CreateFilledElement(context.proxy, dom, m, fragment, null, context.options, context.base));
             });
 
             if (beforeElement)
