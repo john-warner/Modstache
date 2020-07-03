@@ -57,26 +57,16 @@ var SimpleExample = function() {
 
     var GetDeleteOptionHandler = (data,array) => () => { let i=array.indexOf(data); array.splice(i,1); };
     var GetPositionOptionHandler = (data,array) => () => { let i=array.indexOf(data); array[i] = GetOption(i+1); };
-    var GetOption = (i) => { return { value: i, 
-                                      text: 'Option ' + i, 
-                                      deleteOption: (ctx) => GetDeleteOptionHandler(ctx.parent,ctx.array),
-                                      positionOption: (ctx) => GetPositionOptionHandler(ctx.parent,ctx.array) 
-                                    }};
+    var GetOption = (i) => { return { value: i, text: 'Option ' + i }};
     var selectOptions = {
         addOption: (ctx) => () => {var i=ctx.parent.options.length+1; ctx.parent.options.push(GetOption(i))},
         prependOption: (ctx) => () => {var i=ctx.parent.options.length+1; ctx.parent.options.unshift(GetOption(i))},
         clearOptions: (ctx) => () => ctx.parent.options.length = 0,
+        deleteOption: (ctx) => GetDeleteOptionHandler(ctx.root,ctx.array),
+        positionOption: (ctx) => GetPositionOptionHandler(ctx.root,ctx.array),
         options: [
-        { value: 1, 
-          text: 'Option 1', 
-          deleteOption: (ctx) => GetDeleteOptionHandler(ctx.parent,ctx.array),
-          positionOption: (ctx) => GetPositionOptionHandler(ctx.parent,ctx.array)
-        },
-        { value: 2, 
-          text: 'Option 2', 
-          deleteOption: (ctx) => GetDeleteOptionHandler(ctx.parent,ctx.array),
-          positionOption: (ctx) => GetPositionOptionHandler(ctx.parent,ctx.array)
-        }
+        { value: 1, text: 'Option 1' },
+        { value: 2, text: 'Option 2' }
     ]};
 
     $$.ready(Init);
