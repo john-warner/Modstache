@@ -301,6 +301,7 @@ var $$tache = function() {
         else if (Array.isArray(value)) {
             processed.push(element.querySelectorAll("["+stacheSelector+"]")); // children have been processed
             CreateAndFillElements(element, value, propDetail, options, processed, status);
+            status.removed = true; // remove processing of the rest of the dom controlled by the array
         }
         else {
             if (attribute) {
