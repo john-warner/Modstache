@@ -61,9 +61,9 @@
             <li>Before</li>
             <li {}="options;value:value;">
                 <span {}="text"></span>
-                <span {}="onclick:deleteOption" style="cursor:pointer;font-size:small;font-weight:bold;color:green;">x</span>
-                <span {}="onclick:positionOption" style="cursor:pointer;font-size:small;font-weight:bold;color:orangered;">*</span>
-            </li>
+                <span {}="onclick:{base}.deleteOption" style="cursor:pointer;font-size:small;font-weight:bold;color:green;">x</span>
+                <span {}="onclick:{base}.positionOption" style="cursor:pointer;font-size:small;font-weight:bold;color:orangered;">*</span>
+             </li>
             <li>After</li>
         </ul>
     </template>
@@ -75,10 +75,10 @@
     <div id="time"></div>
     <div id="options"></div>
     <div id="form">
-        <input {}="value:message;onchange:value>message" type="text"><span {}="message"></span>
+        Form changes can update properties: <input {}="value:message;onchange:value>message" type="text" value="Hello"><span {}="message"></span>
     </div>
     <div id="form2">
-        <input {}="value:message;onchange:value>procMessage" type="text" value="Hello"><span {}="message"></span>
+        Form changes can call a function: <input {}="value:message;onchange:value>procMessage" type="text" value="Hello"><span {}="message"></span>
     </div>
 </body>
 </html>
