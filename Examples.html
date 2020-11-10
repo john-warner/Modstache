@@ -80,5 +80,14 @@
     <div id="form2">
         Form changes can call a function: <input {}="value:message;onchange:value>procMessage" type="text" value="Hello"><span {}="message"></span>
     </div>
+    <div id="roottest" >
+        Root change test:
+        <div>
+            Base object message: <span {}="message">Unprocessed Message</span>
+        </div>
+        <div {}="{root}:roottest">
+            Root object can be changed for child elements: <span {}="message">Unprocessed Message</span>
+        </div>
+    </div>
 </body>
 </html>

@@ -306,3 +306,16 @@ test('Test {if} directive', function (assert) {
     var expected = '<div><div>Shown</div></div>';
     assert.deepEqual(result, expected);
 });
+
+test('Test {root} directive', function (assert) {
+    var html = '<div {}="{root}:test"><div {}="message">Wrong</div></div>';
+    var template = document.createElement("template");
+    var data = { test: { message: 'Right!' } };
+
+    template.innerHTML = html;
+    $$tache.fill(template.content, data, { removeStache: true });
+
+    var result = template.innerHTML;
+    var expected = '<div><div>Right!</div></div>';
+    assert.deepEqual(result, expected);
+});

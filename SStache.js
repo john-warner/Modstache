@@ -9,7 +9,7 @@ var $$tache = function() {
 
     'use strict';
 
-    var version = '0.9.5';
+    var version = '0.9.6';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -28,6 +28,7 @@ var $$tache = function() {
     const PlaceholderTag = 'slot';
     const Directives = {
         if: '{if}',
+        root: '{root}', // change root data object for descendants
         oninit: '{oninit}',
         // onremoved: '{onremoved}', // not working
         // onupdated: '{onupdated}', // not working
@@ -245,6 +246,9 @@ var $$tache = function() {
             case Directives.if:
                 processIfDirective(dom, value, propDetail, options, processed, status);
                 break;
+            case Directives.root:
+                processRootDirective(dom, value, propDetail, options, processed, status);
+                break;
             case Directives.oninit:
                 processOnInitDirective(dom, value, propDetail, options, processed, status);
                 break;
@@ -263,6 +267,18 @@ var $$tache = function() {
             RemoveElement(dom, processed, options);
             status.removed = true;
        }
+    }
+
+    function processRootDirective(dom, value, propDetail, options, processed, status) {
+        let root = GetDataValue(value, dom, GetStacheContext(dom,propDetail,options));
+        let stacheSelector = GetStacheAttribute(options);
+        let stached = [...dom.querySelectorAll("["+stacheSelector+"]")]; // needs to be before processing in case stached attribute is removed
+
+        [...dom.children].forEach((e) => {
+            FillDOM(e, root, options, null, propDetail.base);
+        });
+
+        processed.push(...stached);
     }
 
     function processOnInitDirective(dom, value, propDetail, options, processed, status) {

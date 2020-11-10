@@ -286,6 +286,7 @@ Directives are properties in the stache attribute that require special handling.
 "{directive}". The following directives are supported:
 
 * {if} - the element is rendered or removed based on the model value associated with the "if" directive
+* {root} - process element children using a specified root data object.
 * {oninit} - the associated function is called after the element has been processed
 * {template} - specifies a template to use for an array element
 * {base} - Used to refer to the original object used to fill. Eg. {}="textContent:{base}.message"

@@ -55,6 +55,13 @@ var SimpleExample = function() {
         procMessage: (m,c) => c.parent.message = m
     };
 
+    var roottestModel = {
+        message: 'Base message',
+        roottest: {
+            message: 'Modified message'
+        }
+    };
+
     var GetDeleteOptionHandler = (data,array) => () => { let i=array.indexOf(data); array.splice(i,1); };
     var GetPositionOptionHandler = (data,array) => () => { let i=array.indexOf(data); array[i] = GetOption(i+1); };
     var GetOption = (i) => { return { value: i, text: 'Option ' + i }};
@@ -88,6 +95,7 @@ var SimpleExample = function() {
         ShowSelect();
         SetupForm();
         SetupForm2();
+        RootChangeTest();
      }
 
     function PopulateHead() {
@@ -192,6 +200,11 @@ var SimpleExample = function() {
     function SetupForm2() {
         let form = $$.bind('#form2');
         $$tache.fill(form, form2Model, { removeStache: true });
+    }
+
+    function RootChangeTest() {
+        let roottest = $$.bind('#roottest');
+        $$tache.fill(roottest, roottestModel, { removeStache: true });
     }
 
     return {
