@@ -9,7 +9,7 @@ var $$tache = function() {
 
     'use strict';
 
-    var version = '0.9.6';
+    var version = '0.9.7';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -178,6 +178,7 @@ var $$tache = function() {
         stached.forEach((e) => {
             options = GetAllOptionSettings(options);
             let status = { removed: false };
+            let deferred = false;
 
             if (!processed.includes(e)) {
                 let assignments = e.getAttribute(options.stache).split(';');
@@ -212,7 +213,7 @@ var $$tache = function() {
                         var value = propDetail.parent[propDetail.propertyName]; // GetValue(data, ss);
                         if (typeof value !== 'undefined') {
                             if (attribute && attribute[0] === '{') { // special directive
-                                ProcessDirective(attribute, e, value, propDetail, options, processed, status)
+                                ProcessDirective(attribute, e, value, propDetail, options, processed, status);
                             }
                             else {
                                 if (attribute == null && translate && translate.hasOwnProperty(ss))
@@ -227,13 +228,21 @@ var $$tache = function() {
                             }
                          }
                     }
+                    else { // value not found in object - process appropriately
+                        if (attribute && attribute[0] === '{') { // special directive
+                            ProcessDirective(attribute, e, null, null, options, processed, status);
+                            deferred = true;
+                        }
+                    }
 
                     return status.removed;
                 });
-                if (options.removeStache)
-                    e.removeAttribute(options.stache);
-                if (options.events.oninit) {
-                    options.events.oninit(e);
+                if (!deferred) {
+                    if (options.removeStache)
+                        e.removeAttribute(options.stache);
+                    if (options.events.oninit) {
+                        options.events.oninit(e);
+                    }
                 }
             }
         });
@@ -270,13 +279,14 @@ var $$tache = function() {
     }
 
     function processRootDirective(dom, value, propDetail, options, processed, status) {
-        let root = GetDataValue(value, dom, GetStacheContext(dom,propDetail,options));
-        let stacheSelector = GetStacheAttribute(options);
-        let stached = [...dom.querySelectorAll("["+stacheSelector+"]")]; // needs to be before processing in case stached attribute is removed
+        let stached = [...dom.querySelectorAll("["+GetStacheAttribute(options)+"]")]; // needs to be before processing in case stached attribute is removed
+        if (value !== null) {
+            let root = GetDataValue(value, dom, GetStacheContext(dom,propDetail,options));
 
-        [...dom.children].forEach((e) => {
-            FillDOM(e, root, options, null, propDetail.base);
-        });
+            [...dom.children].forEach((e) => {
+                FillDOM(e, root, options, null, propDetail.base);
+            });
+        }
 
         processed.push(...stached);
     }
