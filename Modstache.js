@@ -1,15 +1,15 @@
-// SStache
-// Simple mustache placeholder replacement and reactive model/dom assignment
+// Modstache
+// Mustache placeholder replacement and reactive model/dom assignment
 //
 //
 
 /*jshint esversion: 9 */
 
-var $$tache = function() {
+var _M_ = Modstache = function() {
 
     'use strict';
 
-    var version = '0.9.7';
+    var version = '1.0.0';
   
     var exports = { version: version };
     var defaultOptions = {

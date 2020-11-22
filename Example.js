@@ -1,4 +1,4 @@
-var SimpleExample = function() {
+var ModstacheExample = function() {
 
     var list;
     var headTemplate;
@@ -103,19 +103,19 @@ var SimpleExample = function() {
     }
 
     function PopulateList() {
-        data.forEach((d) => list.$$.append($$tache.fill(templateHtml, d)));
+        data.forEach((d) => list.$$.append(_M_.fill(templateHtml, d)));
     }
 
     function PopulateList2() {
-        objData.forEach((d) => list.$$.append($$tache.fill(template2Html, d)));
+        objData.forEach((d) => list.$$.append(_M_.fill(template2Html, d)));
     }
 
     function ShowAddresses() {
         var template = $$.bind("#addressTemplate");
         var container = $$.bind("#addresses");
         var translate = { text: 'textContent', storage: 'data-storage', id: 'id' }
-        //addresses.forEach((a) => { container.$$.append($$tache.fill(template.$$.copy(), a, { translate: translate }))});
-        container.$$.append($$tache.fill(template.$$.copy(), {addresses:addresses}, { translate: translate, reactive: true, removeStache: true }));
+        //addresses.forEach((a) => { container.$$.append(_M_.fill(template.$$.copy(), a, { translate: translate }))});
+        container.$$.append(_M_.fill(template.$$.copy(), {addresses:addresses}, { translate: translate, reactive: true, removeStache: true }));
         addresses[1].zipcode.style += 'background-color:lightblue;'; // test reactive
         addresses[0].nameColor = 'orange';
     }
@@ -124,19 +124,19 @@ var SimpleExample = function() {
         var template = $$.bind("#bookTemplate");
         var container = $$.bind("#books");
         var translate = { bookid: 'id' };
-        books.forEach((b) => { container.$$.append($$tache.fill(template.$$.copy(), b, { translate: translate})); });
+        books.forEach((b) => { container.$$.append(_M_.fill(template.$$.copy(), b, { translate: translate})); });
     }
 
     function ShowMessage() {
         var template = $$.bind("#messageTemplate");
         var container = $$.bind("#message");
-        container.$$.append($$tache.fill(template.$$.copy(), message, { removeStache: true }));
+        container.$$.append(_M_.fill(template.$$.copy(), message, { removeStache: true }));
     }
 
     function ShowTime() {
         var template = $$.bind("#timeTemplate");
         var container = $$.bind("#time");
-        container.$$.append($$tache.fill(template.$$.copy(), time, { removeStache: true }));
+        container.$$.append(_M_.fill(template.$$.copy(), time, { removeStache: true }));
         //setInterval(() => { time.time = time.time; }, 1000);
     }
 
@@ -189,22 +189,22 @@ var SimpleExample = function() {
     function ShowSelect() {
         var template = $$.bind("#optionsTemplate");
         var container = $$.bind("#options");
-        container.$$.append($$tache.fill(template.$$.copy(), selectOptions, { removeStache: true }));
+        container.$$.append(_M_.fill(template.$$.copy(), selectOptions, { removeStache: true }));
     }
 
     function SetupForm() {
         let form = $$.bind('#form');
-        $$tache.fill(form, formModel, { removeStache: true });
+        _M_.fill(form, formModel, { removeStache: true });
     }
 
     function SetupForm2() {
         let form = $$.bind('#form2');
-        $$tache.fill(form, form2Model, { removeStache: true });
+        _M_.fill(form, form2Model, { removeStache: true });
     }
 
     function RootChangeTest() {
         let roottest = $$.bind('#roottest');
-        $$tache.fill(roottest, roottestModel, { removeStache: true });
+        _M_.fill(roottest, roottestModel, { removeStache: true });
     }
 
     return {

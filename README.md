@@ -1,4 +1,4 @@
-# SStache
+# modstache
 The SStache utility library can create and/or assign DOM element properties or attributes through data objects. Replace HTML strings using mustache syntax {{}} or through "{}" attribute definition. The data object can also become reactive, where changing a property value will reflect immediately in the DOM.
 
 This is not a full featured framework, such as Angular, React or Vue. There is no shadow/virtual DOM or element creation based on encoded values. Operations are made directly with HTML strings for the mustache "{{}}" replacement and DOM fragments/trees replacement with the "{}" attribute values. This allows for quick and automatic assignment of the data model to the UI components.
@@ -14,38 +14,40 @@ Data passed for assignment can be any needed value for the DOM element. The defa
 To use the SStache library, include SStache.js or SStache.min.js file:
 
  ```javascript
-   <script src="SStache.min.js"></script>
+   <script src="Modstache.min.js"></script>
 ```
-This will create the $$tache object that exposes the following API :
+This will create the Modstache object that exposes the following API :
 
 * fill - assigns data properties. Works on an HTML string or DOM fragment. Returns the filled DOM fragment.
 * fillHTML - assigns data properties to an HTML string by replacing mustache syntax {{}}
 * fillDOM - assigns data properties to a DOM fragment by looking for elements with the {} attribute
-* options - gets/sets the default options for $$tache.
+* options - gets/sets the default options for Modstache.
 
-### $$tache.fill
+The Modstache library can also be accessed through the _M_ variable.
+
+### Modstache.fill
 
 Assigns data properties. Works on an HTML string or DOM fragment. Returns the filled DOM fragment.
 
 #### API call
 
  ```javascript
-var targetFragment = $$tache.fill(target:HTML string or DOM fragment, data:object, optional options:object);
+var targetFragment = Modstache.fill(target:HTML string or DOM fragment, data:object, optional options:object);
 ```
 
 **Returns**
 The passed DOM fragment is modified and returned or a new fragment is created from the passed HTML.
 
-#### Example of $$tache.fill with HTML string
+#### Example of Modstache.fill with HTML string
 
  ```javascript
     var html = "<div>{{value}}</div>";
     var data = { value: 'Testing!' };
-    var fragment = $$tache.fill(html, data);
+    var fragment = Modstache.fill(html, data);
     // fragment contains DOM elements "<div>Testing!</div>"
 ```
 
-#### Example of $$tache.fill with DOM fragment
+#### Example of Modstache.fill with DOM fragment
 
  ```javascript
     var html = '<div {}="value">This is replaced</div>';
@@ -53,18 +55,18 @@ The passed DOM fragment is modified and returned or a new fragment is created fr
     var data = { value: 'Hello' };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    Modstache.fill(template.content, data, { removeStache: true });
     // template.innerHTML is "<div>Hello</div>"
 ```
 
-### $$tache.fillHTML
+### Modstache.fillHTML
 
 Assigns data properties to an HTML string by replacing mustache syntax {{}}
 
 #### API call
 
  ```javascript
-var html = $$tache.fillHTML(target:HTML string, data:object, optional options:object);
+var html = Modstache.fillHTML(target:HTML string, data:object, optional options:object);
 ```
 
 **Returns**
@@ -75,18 +77,18 @@ An HTML string with replacements
  ```javascript
     var html = "<div>{{value}}</div>";
     var data = { value: 'Testing!' };
-    var filledHtml = $$tache.fillHTML(html, data);
+    var filledHtml = Modstache.fillHTML(html, data);
     // filledHtml contains string "<div>Testing!</div>"
 ```
 
-### $$tache.fillDOM
+### Modstache.fillDOM
 
 Assigns data properties to a DOM fragment by looking for elements with the {} attribute
 
 #### API call
 
  ```javascript
-var fragment = $$tache.fillDOM(target:DOM fragment, data:object, optional options:object);
+var fragment = Modstache.fillDOM(target:DOM fragment, data:object, optional options:object);
 ```
 
 **Returns**
@@ -100,7 +102,7 @@ The passed DOM fragment is modified and returned. The data object is modified ba
     var data = { value: 'Hello' };
 
     template.innerHTML = html;
-    $$tache.fillDOM(template.content, data, { removeStache: true });
+    Modstache.fillDOM(template.content, data, { removeStache: true });
     // template.innerHTML is "<div>Hello</div>"
 ```
 
@@ -214,7 +216,7 @@ HTML
 Javascript
  ```javascript
     var message = { message: 'Hello' };
-    $$tache.fill(document.getElementById('myMessage'), message);
+    Modstache.fill(document.getElementById('myMessage'), message);
 ```
 
 This will result in the following HTML:
@@ -259,14 +261,14 @@ This HTML will modify the message property of the data when the input text is ch
 You can also assign the property or attribute to a function in the model. The function will be passed the property value and the SStache context.
 
 
-### $$tache.options
+### Modstache.options
 
-The following options can be defined through $$tache.options
+The following options can be defined through Modstache.options
 
 #### API call
 
  ```javascript
-var options = $$tache.options({ modified properties });
+var options = Modstache.options({ modified properties });
 ```
 
 **Returns**

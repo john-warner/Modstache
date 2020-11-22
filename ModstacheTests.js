@@ -8,7 +8,7 @@ const fragmentHtml = (f) => [...f.childNodes].map(n => n.outerHTML).join('\n');
 
 test('Test html without mustache values', function (assert) {
     var html = "<div></div>";
-    var result = fragmentHtml($$tache.fill(html));
+    var result = fragmentHtml(_M_.fill(html));
     var expected = html;
     assert.deepEqual(result, expected);
 });
@@ -16,7 +16,7 @@ test('Test html without mustache values', function (assert) {
 test('Test html with mustache values', function (assert) {
     var html = "<div>{{value}}</div>";
     var data = { value: 'Working!' };
-    var result = fragmentHtml($$tache.fill(html, data));
+    var result = fragmentHtml(_M_.fill(html, data));
     var expected = "<div>Working!</div>";
     assert.deepEqual(result, expected);
 });
@@ -24,7 +24,7 @@ test('Test html with mustache values', function (assert) {
 test('Test with missing data values', function (assert) {
     var html = "<div>{{value}}</div>";
     var data = { };
-    var result = fragmentHtml($$tache.fill(html, data));
+    var result = fragmentHtml(_M_.fill(html, data));
     var expected = html;
     assert.deepEqual(result, expected);
 });
@@ -32,7 +32,7 @@ test('Test with missing data values', function (assert) {
 test('Test with enabled inserted script', function (assert) {
     var html = "<div>{{value}}</div>";
     var data = { value: '<script>log.console("scripted");</script>' };
-    var result = fragmentHtml($$tache.fill(html, data, { escape: false }));
+    var result = fragmentHtml(_M_.fill(html, data, { escape: false }));
     var expected = "<div><script>log.console(\"scripted\");</script></div>";
     assert.deepEqual(result, expected);
 });
@@ -40,7 +40,7 @@ test('Test with enabled inserted script', function (assert) {
 test('Test with disabled inserted script', function (assert) {
     var html = "<div>{{value}}</div>";
     var data = { value: '<script>log.console("scripted");</script>' };
-    var result = fragmentHtml($$tache.fill(html, data, { escape: true }));
+    var result = fragmentHtml(_M_.fill(html, data, { escape: true }));
     var expected = "<div>&lt;script&gt;log.console(\"scripted\");&lt;/script&gt;</div>";
     assert.deepEqual(result, expected);
 });
@@ -51,7 +51,7 @@ test('Test with dom fragment', function (assert) {
     var data = { value: 'Hello' };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
 
     var result = template.innerHTML;
     var expected = "<div>Hello</div>";
@@ -65,7 +65,7 @@ test('Test dom fragment translation', function (assert) {
     var translate = { text: 'textContent' };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { translate: translate, removeStache: true });
+    _M_.fill(template.content, data, { translate: translate, removeStache: true });
 
     var result = template.innerHTML;
     var expected = "<div>Hello</div>";
@@ -78,7 +78,7 @@ test('Test dom fragment attribute setting', function (assert) {
     var data = { value: { class: 'bold', textContent: 'Hello' } };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
 
     var result = template.innerHTML;
     var expected = '<div class="bold">Hello</div>';
@@ -92,7 +92,7 @@ test('Test dom fragment external initialization', function (assert) {
     var data = { init: () => { inited = true; } };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
 
     var result = inited;
     var expected = true;
@@ -105,7 +105,7 @@ test('Test dom fragment multiple attributes', function (assert) {
     var data = { value: 'Hello', class: 'bold' };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
 
     var result = template.innerHTML;
     var expected = '<div class="bold">Hello</div>'
@@ -119,7 +119,7 @@ test('Test setting event handler', function (assert) {
     let data = { click: () => onclick };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data);
+    _M_.fill(template.content, data);
   
     var result = template.content.children[0].onclick;
     var expected = onclick;
@@ -132,7 +132,7 @@ test('Test reactive', function (assert) {
     var data = { value: 'Hello' };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
     data.value = 'Bye';
 
     var result = template.innerHTML;
@@ -147,7 +147,7 @@ test('Test reactive', function (assert) {
 
 //     // template.innerHTML = html;
 //     var input = document.querySelector('#inputTest');
-//     var dom = $$tache.fill(input, data, { removeStache: true });
+//     var dom = _M_.fill(input, data, { removeStache: true });
 //     //var input = dom.querySelector('input');
     
 //     input.focus();
@@ -165,7 +165,7 @@ test('Test SStache override default attribute', function (assert) {
     var data = { value: 'Hello', class: 'bold' };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { stache: 'SS' });
+    _M_.fill(template.content, data, { stache: 'SS' });
 
     var result = template.innerHTML;
     var expected = '<div ss="value;class:class;" class="bold">Hello</div>'
@@ -178,7 +178,7 @@ test('Test with array', function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
 
     var result = template.innerHTML;
     var expected = '<div><div>One</div><div>Two</div></div>'
@@ -191,7 +191,7 @@ test('Test with array push', function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
     data.text.push({ text: 'Three' });
     var result = template.innerHTML;
     var expected = '<div><div>One</div><div>Two</div><div>Three</div></div>'
@@ -204,7 +204,7 @@ test('Test with array unshift', function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
     data.text.unshift({ text: 'Three' });
     var result = template.innerHTML;
     var expected = '<div><div>Three</div><div>One</div><div>Two</div></div>'
@@ -217,7 +217,7 @@ test('Test with array splice', function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
     data.text.splice(1,1,{ text: 'Three' },{ text: 'Four' });
     var result = template.innerHTML;
     var expected = '<div><div>One</div><div>Three</div><div>Four</div></div>'
@@ -230,7 +230,7 @@ test('Test with array pop', function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
     data.text.pop();
     var result = template.innerHTML;
     var expected = '<div><div>One</div></div>'
@@ -243,7 +243,7 @@ test('Test with array shift', function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
     data.text.shift();
     var result = template.innerHTML;
     var expected = '<div><div>Two</div></div>'
@@ -256,7 +256,7 @@ test('Test with array index assignment', function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
     data.text[1] = { text: "abc" };
     var result = template.innerHTML;
     var expected = '<div><div>One</div><div>abc</div></div>'
@@ -269,7 +269,7 @@ test('Test with array length assignment', function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
     data.text.length = 1;
     var result = template.innerHTML;
     var expected = '<div><div>One</div></div>'
@@ -288,7 +288,7 @@ test('Test with array modified template', function (assert) {
     template.innerHTML = html;
     template1.innerHTML = html1;
     template2.innerHTML = html2;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
     var result = template.innerHTML;
     var expected = '<div><div>Template One</div><div>Template Two</div></div>'
     assert.deepEqual(result, expected);
@@ -300,7 +300,7 @@ test('Test {if} directive', function (assert) {
     var data = { show: true, hide: false };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
 
     var result = template.innerHTML;
     var expected = '<div><div>Shown</div></div>';
@@ -313,7 +313,7 @@ test('Test {root} directive', function (assert) {
     var data = { test: { message: 'Right!' } };
 
     template.innerHTML = html;
-    $$tache.fill(template.content, data, { removeStache: true });
+    _M_.fill(template.content, data, { removeStache: true });
 
     var result = template.innerHTML;
     var expected = '<div><div>Right!</div></div>';
