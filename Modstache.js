@@ -9,7 +9,7 @@ var _M_ = Modstache = function() {
 
     'use strict';
 
-    var version = '1.0.0';
+    var version = '1.0.1';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -322,7 +322,8 @@ var _M_ = Modstache = function() {
         let stacheSelector = GetStacheAttribute(options);
 
         if (isPlainObject(value)) {
-            FillElementWithObject(element, value, options);
+            //FillElementWithObject(element, value, options);
+            AssignTextOrObject(element, value, propDetail, info, options);
         }
         else if (Array.isArray(value)) {
             processed.push(element.querySelectorAll("["+stacheSelector+"]")); // children have been processed
@@ -341,7 +342,7 @@ var _M_ = Modstache = function() {
             else if (attribute === '')
                 AssignNothing(element, propDetail, info, options);  // useful for external initialization of element
             else
-                AssignText(element, value, propDetail, info, options);
+                AssignTextOrObject(element, value, propDetail, info, options);
         }
 
         return processed;
@@ -648,12 +649,22 @@ var _M_ = Modstache = function() {
         }
     }
 
-    function AssignText(element, value, propDetail, info, options) {
-        element.textContent = value;
+    function AssignTextOrObject(element, value, propDetail, info, options) {
+        if (isPlainObject(value)) {
+            FillElementWithObject(element, value, options);
+        }
+        else {
+            element.textContent = value;
+        }
         if (options.reactive) {
             ChangeSetter(propDetail, (v) => { 
                 v = GetDataValue(v, element, info); 
-                element.textContent =  v; 
+                if (isPlainObject(v)) {
+                    FillElementWithObject(element, v, options);
+                }
+                else {
+                    element.textContent = v;
+                }
                 return v; });
         }
     }

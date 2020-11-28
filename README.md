@@ -1,5 +1,5 @@
 # modstache
-The SStache utility library can create and/or assign DOM element properties or attributes through data objects. Replace HTML strings using mustache syntax {{}} or through "{}" attribute definition. The data object can also become reactive, where changing a property value will reflect immediately in the DOM.
+The Modstache utility library can create and/or assign DOM element properties or attributes through data objects. Replace HTML strings using mustache syntax {{}} or through "{}" attribute definition. The data object can also become reactive, where changing a property value will reflect immediately in the DOM.
 
 This is not a full featured framework, such as Angular, React or Vue. There is no shadow/virtual DOM or element creation based on encoded values. Operations are made directly with HTML strings for the mustache "{{}}" replacement and DOM fragments/trees replacement with the "{}" attribute values. This allows for quick and automatic assignment of the data model to the UI components.
 
@@ -11,7 +11,7 @@ Data passed for assignment can be any needed value for the DOM element. The defa
 
  If an assignment is made with an array, then the DOM element and children are duplicated for each entry in the array. Each array entry is used as the model for the new elements.
 
-To use the SStache library, include SStache.js or SStache.min.js file:
+To use the Modstache library, include Modstache.js or Modstache.min.js file:
 
  ```javascript
    <script src="Modstache.min.js"></script>
@@ -182,11 +182,12 @@ Javascript
 Functions in the data are passed an object parameter with the context. It has the following properties:
 
 * element - the DOM element being processed
-* root - the data object passed into SStache or the object in an array used to fill the template
+* root - the data object passed into Modstache or the object in an array used to fill the template
 * parent - the parent object containing the data function
 * key - the key in data containing the data function
 * array - the containing array, if used
-* base - the original object passed into SStache
+* base - the original object passed into Modstache
+* previous - the previous array context
 
 In the example above, ctx would contain the following values for the btn.label specifier:
 
@@ -198,7 +199,8 @@ Javascript
          parent: state.btn,
          key: 'label',
          array: null,
-         base: state
+         base: state,
+         previous: null
     };
 ```
 
@@ -249,16 +251,16 @@ The UI can be filled again with the new object to make it reactive.
 
 #### Modify model when form changes
 
-The reactive feature for SStache is one way, meaning that UI elements are modified when the data is changed. It is possible to modify
+The reactive feature for Modstache is one way, meaning that UI elements are modified when the data is changed. It is possible to modify
 the model data when a UI form element is modified by tying an event, such as onchange, to a function that modified the model member.
-This can be handled with the SStache specifier by assigning the event to a property/data pairing using '>' as a separator.
+This can be handled with the Modstache specifier by assigning the event to a property/data pairing using '>' as a separator.
 
 This HTML will modify the message property of the data when the input text is changed:
  ```html
     <input {}="onchange:value>message" />
 ```
 
-You can also assign the property or attribute to a function in the model. The function will be passed the property value and the SStache context.
+You can also assign the property or attribute to a function in the model. The function will be passed the property value and the Modstache context.
 
 
 ### Modstache.options
