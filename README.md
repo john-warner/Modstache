@@ -1,4 +1,7 @@
 # modstache
+
+See the Modstache website for the latest documentation and examples at [a link](http://www.modstache.com)
+
 The Modstache utility library can create and/or assign DOM element properties or attributes through data objects. Replace HTML strings using mustache syntax {{}} or through "{}" attribute definition. The data object can also become reactive, where changing a property value will reflect immediately in the DOM.
 
 This is not a full featured framework, such as Angular, React or Vue. There is no shadow/virtual DOM or element creation based on encoded values. Operations are made directly with HTML strings for the mustache "{{}}" replacement and DOM fragments/trees replacement with the "{}" attribute values. This allows for quick and automatic assignment of the data model to the UI components.
