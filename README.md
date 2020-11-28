@@ -1,6 +1,6 @@
 # modstache
 
-See the Modstache website for the latest documentation and examples at [a link](http://www.modstache.com)
+See the Modstache website for the latest documentation and examples at [Modstache.com](http://www.modstache.com)
 
 The Modstache utility library can create and/or assign DOM element properties or attributes through data objects. Replace HTML strings using mustache syntax {{}} or through "{}" attribute definition. The data object can also become reactive, where changing a property value will reflect immediately in the DOM.
 
