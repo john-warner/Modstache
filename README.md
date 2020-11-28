@@ -200,7 +200,7 @@ Javascript
          key: 'label',
          array: null,
          base: state,
-         previous: context
+         previous: null
     };
 ```
 
