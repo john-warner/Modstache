@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+
+<html>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directives Example</title>
+</head>
+<body>
+
+    <script src="../Modstache.js"></script>
+    
+    <h1>{if}</h1>
+
+    <div id="ifExample">
+        <div {}="{if}:hidden">You should not see me</div>
+        <div {}="{if}:shown">You should be able to see me</div>
+    </div>
+    <script>
+    
+        function ifExample() {
+    
+            let ifModel = {
+                hidden: false,
+                shown: true
+            };
+    
+            _M_.fill(document.getElementById('ifExample'), ifModel);
+        }
+    
+        document.addEventListener("DOMContentLoaded", ifExample);
+    </script>
+    
+    <h1>{root}</h1>
+    
+    <div id="rootExample">
+        <div style="margin-bottom:10px;">Contact information without {root} directive</div>
+        <div>
+            Name: <span {}="contact.name"></span><br />
+            Address: <span {}="contact.address"></span><br />
+            City: <span {}="contact.city"></span>, State: <span {}="contact.state"></span> Zipcode: <span {}="contact.zipcode"></span>
+        </div>
+        <div style="margin-top:10px;margin-bottom:10px;">Contact information with {root} directive</div>
+        <div {}="{root}:contact">
+            Name: <span {}="name"></span><br />
+            Address: <span {}="address"></span><br />
+            City: <span {}="city"></span>, State: <span {}="state"></span> Zipcode: <span {}="zipcode"></span>
+        </div>
+    </div>
+    <script>
+    
+        function rootExample() {
+    
+            let rootModel = {
+                contact: {
+                    name: 'Jim',
+                    address: '1234 Main',
+                    city: 'New York City',
+                    state: 'NY',
+                    zipcode: '81000'
+                }
+            };
+    
+            _M_.fill(document.getElementById('rootExample'), rootModel);
+        }
+    
+        document.addEventListener("DOMContentLoaded", rootExample);
+    </script>
+    
+    <h1>{oninit}</h1>
+    
+    <div id="oninitExample">
+        <div {}="{root}:contact">
+            Name: <span {}="name;{oninit}:oninit"></span><br />
+            Address: <span {}="address;"></span><br />
+            City: <span {}="city;"></span>, State: <span {}="state;"></span> Zipcode: <span {}="zipcode;"></span>
+        </div>
+    </div>
+    <script>
+    
+        function oninitExample() {
+    
+            let oninitModel = {
+               contact: {
+                    oninit: (ctx, e) => e.textContent = e.textContent + ' (initialized)',
+                    name: 'Jim',
+                    address: '1234 Main',
+                    city: 'New York City',
+                    state: 'NY',
+                    zipcode: '81000'
+                }
+            };
+    
+            _M_.fill(document.getElementById('oninitExample'), oninitModel);
+        }
+    
+        document.addEventListener("DOMContentLoaded", oninitExample);
+    </script>
+    
+    
+    <h1>{template}</h1>
+    
+    <div id="templateExample">
+        <template id="templateOne">
+            <div style="color:red;border:1px solid black;display:inline-block;">
+                Template One (<span {}="count"></span>)
+            </div>
+        </template>
+        <template id="templateTwo">
+            <div style="color:blue;border:1px solid blue;display:inline-block;">
+                Template Two (<span {}="time"></span>)
+            </div>
+        </template>
+        <button {}="onclick:addTemplateOne">Add Template One</button>
+        <button {}="onclick:addTemplateTwo">Add Template Two</button>
+        <div>
+            <div {}="items;{template}:activeTemplate" style="margin-top:10px;">
+            </div>
+        </div>
+    </div>
+    <script>
+    
+        function templateExample() {
+    
+            let fragmentOne = document.getElementById('templateOne').content;
+            let fragmentTwo = document.getElementById('templateTwo').content;
+            let templateModel = {
+                templateOneCount: 0,
+                templateTwoCount: 0,
+                addTemplateOne: (ctx) => () => {
+                    ctx.root.templateOneCount++;
+                    ctx.root.items.push({
+                        activeTemplate: fragmentOne,
+                        count: ctx.root.templateOneCount
+                    });
+                },
+                addTemplateTwo: (ctx) => () => {
+                    ctx.root.templateTwoCount++;
+                    ctx.root.items.push({
+                        activeTemplate: fragmentTwo,
+                        time: (ctx) => {
+                            setInterval(() => { ctx.parent.time = ctx.parent.time; }, 1000); // set up automatic update every second
+                            ctx.parent.time = () => { return (new Date()).toLocaleTimeString(); }; // modify time property to get current time
+                            return ctx.parent.time();
+                        }
+                    });
+                },
+                items: []
+            };
+    
+            _M_.fill(document.getElementById('templateExample'), templateModel);
+        }
+    
+        document.addEventListener("DOMContentLoaded", templateExample);
+    </script>
+    
+    
+    <h1>{base}</h1>
+    
+    <div id="baseExample">
+        <div {}="{root}:contact">
+            Name: <span {}="name;:{base}.stylize"></span><br />
+            Address: <span {}="address;"></span><br />
+            City: <span {}="city;"></span>, State: <span {}="state;"></span> Zipcode: <span {}="zipcode;"></span>
+        </div>
+    </div>
+    <script>
+    
+        function baseExample() {
+    
+            let baseModel = {
+                stylize: (ctx,e) => e.style.fontWeight='bold',
+                contact: {
+                    name: 'Jim',
+                    address: '1234 Main',
+                    city: 'New York City',
+                    state: 'NY',
+                    zipcode: '81000'
+                }
+            };
+    
+            _M_.fill(document.getElementById('baseExample'), baseModel);
+        }
+    
+        document.addEventListener("DOMContentLoaded", baseExample);
+    </script>
+    
+    
+
+
+</body>
+</html>

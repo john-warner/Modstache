@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+
+<html><head>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arrays Example</title>
+</head>
+<body>
+
+    <script src="../Modstache.js"></script>
+    
+    <h1>List</h1>
+
+    <div id="listExample">
+        <div>
+            <button {}="onclick:addItem">Click to Add List Item</button>
+            <button {}="onclick:removeItem">Click to Remove List Item</button>
+        </div>
+        <ul>
+            <li {}="items;item"></li>
+        </ul>
+    </div>
+    <script>
+    
+        function listExample() {
+    
+            let listModel = {
+                addItem: ({ root }) => () => {
+                    let list = root.items; list.push({ item: 'Item ' + (list.length + 1) });
+                },
+                removeItem: ({ root }) => () => {
+                    if (root.items.length > 0)
+                        root.items.pop();
+               },
+                items: []
+            };
+    
+            _M_.fill(document.getElementById('listExample'), listModel, { removeStache: true });
+        }
+    
+        document.addEventListener("DOMContentLoaded", listExample);
+    </script>
+    
+    
+
+
+</body>
+</html>

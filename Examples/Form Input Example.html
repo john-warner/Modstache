@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+
+<html>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Input Example</title>
+</head>
+<body>
+
+    <script src="../Modstache.js"></script>
+    
+    <h1>Text input</h1>
+
+    <div id="textInputExample">
+        <div>Enter text: <input id="mytextbox" type="text" value="" {}="oninput:value>enteredText" /></div>
+        <div>You entered "<span {}="enteredText"></span>"</div>
+    </div>
+    <script>
+    
+        function TextInput() {
+    
+            let textInputModel = {
+                enteredText: ''
+            };
+    
+            _M_.fill(document.getElementById('textInputExample'), textInputModel);
+        }
+    
+        document.addEventListener("DOMContentLoaded", TextInput);
+    </script>
+    
+    <h1>Radio Buttons</h1>
+    
+    <div id="radioButtonsExample">
+        <div>Select one of the following:</div>
+        <div><input id="apple" type="radio" name="fruit" value="Apple" {}="onchange:value>fruit" /><label for="apple">Apple</label></div>
+        <div><input id="banana" type="radio" name="fruit" value="Banana" {}="onchange:value>fruit" /><label for="banana">Banana</label></div>
+        <div><input id="peach" type="radio" name="fruit" value="Peach" {}="onchange:value>fruit" /><label for="peach">Peach</label></div>
+        <div>You selected "<span {}="fruit"></span>"</div>
+    </div>
+    <script>
+    
+        function RadioButtons() {
+    
+            let radioButtonModel = {
+                fruit: ''
+            };
+    
+            _M_.fill(document.getElementById('radioButtonsExample'), radioButtonModel);
+        }
+    
+        document.addEventListener("DOMContentLoaded", RadioButtons);
+    </script>
+    
+    
+
+</body>
+</html>

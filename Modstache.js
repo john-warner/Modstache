@@ -50,15 +50,14 @@ var _M_ = Modstache = function() {
         return current;
     }
 
-    function GetPropertyDetail(root, obj, path, baseArray, baseObject, parentContext) {
+    function GetPropertyDetail(root, obj, path, baseArray, baseObject) {
         var detail = {
             base: (baseObject) ? baseObject : root,
             root: root,
             parent: obj,
             propertyName: '',
             descriptor: null,
-            array: baseArray,
-            parentContext: parentContext
+            array: baseArray
         };
         var current;
         let missing = false;
@@ -115,8 +114,7 @@ var _M_ = Modstache = function() {
             key: propDetail.propertyName,
             array: propDetail.array,
             events: options.events,
-            base: propDetail.base,
-            previous: propDetail.parentContext
+            base: propDetail.base
         };
     };
     const GetStacheAttribute = (o) => o.stache.replace('{','\\{').replace('}','\\}');
@@ -164,7 +162,7 @@ var _M_ = Modstache = function() {
     
     }
 
-    function FillDOM(dom, data, options = defaultOptions, baseArray = null, baseObject = null, parentContext = null) {
+    function FillDOM(dom, data, options = defaultOptions, baseArray = null, baseObject = null) {
         options = GetAllOptionSettings(options);
 
         let stacheSelector = GetStacheAttribute(options);
@@ -206,10 +204,10 @@ var _M_ = Modstache = function() {
                     var propDetail = null;
                     if (ss.startsWith('{base}.')) {
                         ss = ss.replace('{base}.', '');
-                        propDetail = GetPropertyDetail(data, baseObject, ss, baseArray, baseObject, parentContext);
+                        propDetail = GetPropertyDetail(data, baseObject, ss, baseArray, baseObject);
                     }
                     else {
-                        propDetail = GetPropertyDetail(data, data, ss, baseArray, baseObject, parentContext);
+                        propDetail = GetPropertyDetail(data, data, ss, baseArray, baseObject);
                     }
                     if (propDetail != null) {
                         var value = propDetail.parent[propDetail.propertyName]; // GetValue(data, ss);
@@ -329,7 +327,7 @@ var _M_ = Modstache = function() {
         }
         else if (Array.isArray(value)) {
             processed.push(element.querySelectorAll("["+stacheSelector+"]")); // children have been processed
-            CreateAndFillElements(element, value, propDetail, options, processed, status, info);
+            CreateAndFillElements(element, value, propDetail, options, processed, status);
             status.removed = true; // remove processing of the rest of the dom controlled by the array
         }
         else {
@@ -337,7 +335,7 @@ var _M_ = Modstache = function() {
                 if (element.hasAttribute(attribute))
                     AssignAttribute(element, attribute, value, propDetail, info, options);
                 else {
-                    var elemProperty = GetPropertyDetail(element, element, attribute, null, propDetail.parentContext);
+                    var elemProperty = GetPropertyDetail(element, element, attribute, null);
                     AssignProperty(elemProperty, value, propDetail, info, options);
                 }
             }
@@ -356,7 +354,7 @@ var _M_ = Modstache = function() {
         for (var key in data) {
             let tkey = key;
             let translated = false;
-            var propDetail = GetPropertyDetail(data, data, key, null, null, null); // todo: pass in correct previous context, base, etc
+            var propDetail = GetPropertyDetail(data, data, key);
             var info = GetStacheContext(element,propDetail,options);
             let dataValue = GetDataValue(data[key], element, info);
 
@@ -364,7 +362,7 @@ var _M_ = Modstache = function() {
                 tkey = translate[key];
                 translated = true;
             }
-            var elemProperty = GetPropertyDetail(element, element, tkey, null, null, null);
+            var elemProperty = GetPropertyDetail(element, element, tkey, null);
 
             if (elemProperty !== null) {
                 AssignProperty(elemProperty, dataValue, propDetail, info, options);
@@ -374,7 +372,7 @@ var _M_ = Modstache = function() {
             }
             else if (translated && options.alwaysSetTranslatedProperty) {
                 element[tkey] = dataValue;
-                elemProperty = GetPropertyDetail(element, element, tkey, null, null, null);
+                elemProperty = GetPropertyDetail(element, element, tkey, null);
                 AssignProperty(elemProperty, dataValue, propDetail, info, options);
             }
         }
@@ -412,7 +410,7 @@ var _M_ = Modstache = function() {
         return processed;
     }
 
-    function CreateAndFillElements(element, models, propDetail, options, processed, status, parentContext) {
+    function CreateAndFillElements(element, models, propDetail, options, processed, status) {
         let template = element.cloneNode(true);
         let parent = element.parentNode;
         let createdElements = [];
@@ -430,7 +428,7 @@ var _M_ = Modstache = function() {
                     templateSpecifier =  specifier[1];
                 }
                 else {
-                    let directiveDetail = GetPropertyDetail(propDetail.root, propDetail.parent, specifier[1], models, propDetail.base, propDetail.parentContext);
+                    let directiveDetail = GetPropertyDetail(propDetail.root, propDetail.parent, specifier[1], models);
                     if (directiveDetail) {
                         let value = directiveDetail.parent[directiveDetail.propertyName];
                         ProcessDirective(specifier[0], element, value, directiveDetail, options, processed, status);                 
@@ -439,10 +437,7 @@ var _M_ = Modstache = function() {
             }
         }
 
-        // let base = (Array.isArray(propDetail.array)) ? propDetail.parent : propDetail.base;
-        let base = propDetail.base;
-
-        let context = GetFilledContext(template, templateSpecifier, parent, createdElements, models, options, base, parentContext);
+        let context = GetFilledContext(template, templateSpecifier, parent, createdElements, models, options, propDetail.base);
 
         // replace with proxy before filling in case model functions need to change model
         if (options.reactive) {
@@ -452,7 +447,7 @@ var _M_ = Modstache = function() {
 
         models.forEach((m) => {
             let dom = GetTemplate(context, m);
-            createdElements.push(CreateFilledElement(proxy, dom, m, fragment, null, options, context.base, context.previous));
+            createdElements.push(CreateFilledElement(proxy, dom, m, fragment, null, options, context.base));
         });
 
         parent.insertBefore(fragment, element);
@@ -465,10 +460,10 @@ var _M_ = Modstache = function() {
         parent.removeChild(element);
     }
 
-    function CreateFilledElement(modelArray, template, model, parent, nextElement, options, base, parentContext) {
+    function CreateFilledElement(modelArray, template, model, parent, nextElement, options, base) {
         let e = template.cloneNode(true);
 
-        e = FillDOM(e, model, options, modelArray, base, parentContext);
+        e = FillDOM(e, model, options, modelArray, base);
         if (nextElement)
             parent.insertBefore(e, nextElement);
         else
@@ -493,7 +488,7 @@ var _M_ = Modstache = function() {
         return defaultTemplate;
     }
 
-    function GetFilledContext(template, templateSpecifier, parent, createdElements, models, options, base, parentContext) {
+    function GetFilledContext(template, templateSpecifier, parent, createdElements, models, options, base) {
         return {
             template: template,
             templateSpecifier : templateSpecifier,
@@ -502,7 +497,6 @@ var _M_ = Modstache = function() {
             models: models,
             options: options,
             base: base,
-            previous: parentContext,
             proxy: null, // real proxy to be added if reactive is enabled
             placeholder: null // placeholder element for empty list
         };
@@ -536,7 +530,7 @@ var _M_ = Modstache = function() {
 
             models.forEach((m) => {
                 let dom = GetTemplate(context, m);
-                newElements.push(CreateFilledElement(context.proxy, dom, m, fragment, null, context.options, context.base, context.previous));
+                newElements.push(CreateFilledElement(context.proxy, dom, m, fragment, null, context.options, context.base));
             });
 
             if (beforeElement)

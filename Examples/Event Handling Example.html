@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+
+<html>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Handling Example</title>
+</head>
+<body>
+
+    <script src="../Modstache.js"></script>
+    
+
+    <h1>Clicking a Button</h1>
+
+    <button id="mybutton" {}="onclick:onClickButton">Click Me</button>
+    
+    <script>
+    
+        function ButtonClick() {
+    
+            let buttonModel = {
+                onClickButton: (ctx) => (event) => alert('You clicked the button')
+            };
+    
+            _M_.fill(document.getElementById('mybutton'), buttonModel);
+        }
+    
+        document.addEventListener("DOMContentLoaded", ButtonClick);
+    </script>
+    
+    <h1>Display Number of Times Clicked</h1>
+    
+    <div id="TimesClicked">
+        <button {}="onclick:onClickButton">Click Me</button>
+        <div>
+            You clicked the button <span {}="clickCount"></span> times.
+        </div>
+    </div>
+    
+    <script>
+    
+        function ClickCount() {
+    
+            let clickModel = {
+                clickCount: 0,
+                onClickButton: (ctx) => (event) => ctx.root.clickCount++
+            };
+    
+            _M_.fill(document.getElementById('TimesClicked'), clickModel);
+        }
+    
+        document.addEventListener("DOMContentLoaded", ClickCount);
+    </script>
+    
+    
+
+</body>
+</html>
