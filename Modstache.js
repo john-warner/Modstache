@@ -9,7 +9,7 @@
 
 /*jshint esversion: 9 */
 
-var _M_ = Modstache = function() {
+var Modstache = function() {
 
     'use strict';
 
@@ -396,7 +396,7 @@ var _M_ = Modstache = function() {
                     propDetail.parent[propDetail.propertyName](value, info);
                 else
                     propDetail.parent[propDetail.propertyName] = value; 
-            }
+            };
         }
         else {
             updater = () => { 
@@ -405,7 +405,7 @@ var _M_ = Modstache = function() {
                     propDetail.parent[propDetail.propertyName](value, info);
                 else
                     propDetail.parent[propDetail.propertyName] = value; 
-            }
+            };
         }
 
         element[event] = updater;
@@ -695,3 +695,5 @@ var _M_ = Modstache = function() {
  
     return exports;
 }();
+
+var _M_ = Modstache;
