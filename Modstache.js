@@ -1,7 +1,11 @@
 // Modstache
 // Mustache placeholder replacement and reactive model/dom assignment
 //
+// http://www.modstache.com
 //
+// MIT License
+//
+// Copyright (c) 2020 - John Warner
 
 /*jshint esversion: 9 */
 
