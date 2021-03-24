@@ -13,7 +13,7 @@ var Modstache = function() {
 
     'use strict';
 
-    var version = '1.0.1';
+    var version = '1.0.2';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -227,7 +227,7 @@ var Modstache = function() {
                                         updatePropertyOnEvent(attribute, e, eventUpdateProperty, ss, propDetail, options);
                                     }
                                     else {
-                                        processed.push(FillElementWithData(e, attribute, value, propDetail, options, status));
+                                        processed.push(...FillElementWithData(e, attribute, value, propDetail, options, status));
                                     }
                             }
                          }
@@ -330,7 +330,7 @@ var Modstache = function() {
             AssignTextOrObject(element, value, propDetail, info, options);
         }
         else if (Array.isArray(value)) {
-            processed.push(element.querySelectorAll("["+stacheSelector+"]")); // children have been processed
+            processed.push(...element.querySelectorAll("["+stacheSelector+"]")); // children have been processed
             CreateAndFillElements(element, value, propDetail, options, processed, status);
             status.removed = true; // remove processing of the rest of the dom controlled by the array
         }
@@ -342,7 +342,15 @@ var Modstache = function() {
                     var elemProperty = GetPropertyDetail(element, element, attribute, null);
                     AssignProperty(elemProperty, value, propDetail, info, options);
                 }
-            }
+                // property prioritized over attribute
+                // let elemProperty = GetPropertyDetail(element, element, attribute, null);
+                // if (elemProperty !== null) {
+                //     AssignProperty(elemProperty, value, propDetail, info, options);
+                // }
+                // else if (element.hasAttribute(tkey)) {
+                //     AssignAttribute(element, attribute, value, propDetail, info, options);
+                // }
+           }
             else if (attribute === '')
                 AssignNothing(element, propDetail, info, options);  // useful for external initialization of element
             else
