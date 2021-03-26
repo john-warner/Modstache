@@ -13,7 +13,7 @@ var Modstache = function() {
 
     'use strict';
 
-    var version = '1.0.2';
+    var version = '1.0.3';
   
     var exports = { version: version };
     var defaultOptions = {
@@ -61,7 +61,8 @@ var Modstache = function() {
             parent: obj,
             propertyName: '',
             descriptor: null,
-            array: baseArray
+            array: baseArray,
+            path: path
         };
         var current;
         let missing = false;
@@ -176,7 +177,7 @@ var Modstache = function() {
         let stachedDOMroot = (dom instanceof DocumentFragment) ? null : dom.getAttribute(options.stache);
 
         baseObject = baseObject || data;
-        if (stachedDOMroot) {
+        if (stachedDOMroot !== null) {
             stached.unshift(dom);
         }
         stached.forEach((e) => {
@@ -336,20 +337,20 @@ var Modstache = function() {
         }
         else {
             if (attribute) {
-                if (element.hasAttribute(attribute))
-                    AssignAttribute(element, attribute, value, propDetail, info, options);
-                else {
-                    var elemProperty = GetPropertyDetail(element, element, attribute, null);
-                    AssignProperty(elemProperty, value, propDetail, info, options);
-                }
-                // property prioritized over attribute
-                // let elemProperty = GetPropertyDetail(element, element, attribute, null);
-                // if (elemProperty !== null) {
+                // if (element.hasAttribute(attribute))
+                //     AssignAttribute(element, attribute, value, propDetail, info, options);
+                // else {
+                //     var elemProperty = GetPropertyDetail(element, element, attribute, null);
                 //     AssignProperty(elemProperty, value, propDetail, info, options);
                 // }
-                // else if (element.hasAttribute(tkey)) {
-                //     AssignAttribute(element, attribute, value, propDetail, info, options);
-                // }
+                // property prioritized over attribute
+                let elemProperty = GetPropertyDetail(element, element, attribute, null);
+                if (elemProperty !== null || !element.hasAttribute(attribute)) {
+                    AssignProperty(elemProperty, value, propDetail, info, options);
+                }
+                else if (element.hasAttribute(attribute)) {
+                    AssignAttribute(element, attribute, value, propDetail, info, options);
+                }
            }
             else if (attribute === '')
                 AssignNothing(element, propDetail, info, options);  // useful for external initialization of element
@@ -432,6 +433,7 @@ var Modstache = function() {
 
         // check to see if template is specified
         let assignments = element.getAttribute(options.stache).split(';');
+        let arrayAssignment = -1;
         for (let i=0; i < assignments.length; i++) {
             let assignment = assignments[i];
             let specifier = assignment.split(':');
@@ -447,7 +449,26 @@ var Modstache = function() {
                     }
                 }
             }
+            else if (specifier[0] == propDetail.path) {
+                arrayAssignment = i;
+            }
         }
+
+        // remove array assignment from template in case of same name key in array objects
+        // if (arrayAssignment >= 0) {
+        //     assignments.splice(arrayAssignment, 1);
+        //     let stached = assignments.join(';');
+        //     if (false && stached === '') {
+        //         template.removeAttribute(options.stache);
+        //     }
+        //     else {
+        //         for (let attr = 0; attr < template.attributes.length; attr++) { // can't use setAttribute
+        //             if (template.attributes[attr].name === options.stache) {
+        //                 template.attributes[attr].value = assignments.join(';');
+        //             }
+        //         }
+        //     }
+        // }
 
         let context = GetFilledContext(template, templateSpecifier, parent, createdElements, models, options, propDetail.base);
 
