@@ -252,6 +252,25 @@ The following methods can be used to clear the reactive nature of the data:
 ```
 The UI can be filled again with the new object to make it reactive.
 
+#### Selectively enabling or disabling reactive data
+
+The reactive option setting can be superceded in several ways to selectively enable or disable reactive assignments.
+This is useful because reactivity remains active for the life of the data object. This can result in deleted DOM elements persisting in memory if they have been assigned to reactive data. Note that The reactive assignments for elements created using reactive arrays are managed by Modstache, but not for elements removed externally.
+
+To enable a reactive assignment, include a "+" after the data property name in the stache attribute assignment.
+
+For example:
+ ```html
+    <input type="text" {}="value:message+" value="" />
+```
+
+To disable a reactive assignment, include a "-" after ther data property name in the stache attribute assignment.
+
+For example:
+ ```html
+    <input type="text" {}="value:message-" value="" />
+```
+
 #### Modify model when form changes
 
 The reactive feature for Modstache is one way, meaning that UI elements are modified when the data is changed. It is possible to modify
@@ -297,5 +316,6 @@ Directives are properties in the stache attribute that require special handling.
 * {oninit} - the associated function is called after the element has been processed
 * {template} - specifies a template to use for an array element
 * {base} - Used to refer to the original object used to fill. Eg. {}="textContent:{base}.message"
+* {nonreactive} - Assignments to left of this directive in stache attribute will not be assigned reactively
 
 

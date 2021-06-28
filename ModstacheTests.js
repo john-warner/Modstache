@@ -140,6 +140,34 @@ test('Test reactive', function (assert) {
     assert.deepEqual(result, expected);
 });
 
+test('Test selective reactive disable', function (assert) {
+    var html = '<div {}="value-"></div>';
+    var template = document.createElement("template");
+    var data = { value: 'Hello' };
+
+    template.innerHTML = html;
+    _M_.fill(template.content, data, { removeStache: true });
+    data.value = 'Bye';
+
+    var result = template.innerHTML;
+    var expected = "<div>Hello</div>";
+    assert.deepEqual(result, expected);
+});
+
+test('Test selective reactive enable', function (assert) {
+    var html = '<div {}="value+"></div>';
+    var template = document.createElement("template");
+    var data = { value: 'Hello' };
+
+    template.innerHTML = html;
+    _M_.fill(template.content, data, { removeStache: true, reactive: false });
+    data.value = 'Bye';
+
+    var result = template.innerHTML;
+    var expected = "<div>Bye</div>";
+    assert.deepEqual(result, expected);
+});
+
 // test('Test input change', function (assert) {
 //     // var html = '<input type="text" {}="onchange:value>message" />';
 //     // var template = document.createElement("template");
