@@ -13,7 +13,7 @@ var Modstache = function() {
 
     'use strict';
 
-    let version = '1.0.4';
+    let version = '1.1.0';
   
     let exports = { version: version };
     let defaultOptions = {
@@ -23,6 +23,7 @@ var Modstache = function() {
         alwaysSetTranslatedProperty: false, // ensure element has attribute defined
         reactive: true, // changes to model are reflected in elements
         stache: '{}', // staching attribute name
+        mustacheInArrayTemplate: true, // check for mustache entries in array template
         events: { // events filled in by attribute or with default option
             oninit: null,
             onremoved: null,
@@ -43,21 +44,6 @@ var Modstache = function() {
     };
     let setterBucket = null; // used to keep track of setters for current array fragment
     let reactiveSetters = new WeakMap(); // used to keep track of element reactive setter functions by object and property name
-
-    function GetValue(obj, path) {
-        var current;
-        let missing = false;
-        path.split('.').forEach((o) => {
-            if (missing)
-                return;
-
-            current = (typeof current !== 'undefined') ? current[o] : obj[o];
-            if (typeof (current) === 'undefined')
-                missing = true;
-        });
-            
-        return current;
-    }
 
     function GetPropertyDetail(root, obj, path, baseArray, baseObject) {
         var detail = {
@@ -136,8 +122,9 @@ var Modstache = function() {
         return FillDOM(template, data, options);
     }
 
-    function FillHTML(template, data, options = defaultOptions) {
+    function FillHTML(template, data, options = defaultOptions, baseArray = null, baseObject = null) {
         options = GetAllOptionSettings(options);
+        baseObject = baseObject || data;
 
          // Check if the template is a string or a function
         template = isFunction(template) ? template() : template;
@@ -153,18 +140,25 @@ var Modstache = function() {
             match = match.slice(2, -2);
     
             // Get the value
-            var val = GetValue(data, match);
-
-            // Replace
-            if (typeof(val) === 'undefined')
-                return '{{' + match + '}}';
+            let propDetail = null;
+            if (match.startsWith('{base}.')) {
+                match = match.replace('{base}.', '');
+                propDetail = GetPropertyDetail(data, baseObject, match, baseArray, baseObject);
+            }
             else {
+                propDetail = GetPropertyDetail(data, data, match, baseArray, baseObject);
+            }
+            if (propDetail != null) {
+                let value = propDetail.parent[propDetail.propertyName];
                 if (typeof (val) === 'function')
-                    val = val();
+                    value = value();
                 if (options.escape)
-                    return EscapeForHtml(val);
+                    return EscapeForHtml(value + '');
                 else
-                    return val;
+                    return value + '';
+            }
+            else {
+                return '{{' + match + '}}';
             }
         });
     
@@ -496,6 +490,12 @@ var Modstache = function() {
         //     }
         // }
 
+        if (options.mustacheInArrayTemplate && !templateSpecifier) {
+            let usesMustache = /\{\{([^}]+)\}\}/g.test(template.outerHTML); // check for Mustache usage in template
+            if (usesMustache)
+                template = template.outerHTML;
+        }
+
         let context = GetFilledContext(template, templateSpecifier, parent, createdElements, models, options, propDetail.base);
 
         // replace with proxy before filling in case model functions need to change model
@@ -520,15 +520,24 @@ var Modstache = function() {
     }
 
     function CreateFilledElement(modelArray, template, model, parent, nextElement, options, base) {
-        let e = template.cloneNode(true);
-        
         setterBucket = new Set();
 
-        e = FillDOM(e, model, options, modelArray, base);
-        if (nextElement)
+        if (typeof template === "string") {
+            template = fragment(FillHTML(template, model, options, modelArray, base));
+        }
+        else {
+            template = template.cloneNode(true);
+        }
+
+        let e = FillDOM(template, model, options, modelArray, base);
+        if (nextElement) {
             parent.insertBefore(e, nextElement);
-        else
+            e = nextElement.previousSibling;
+        }
+        else {
             parent.appendChild(e);
+            e = parent.lastChild;
+        }
 
         let result = { e: e, s: setterBucket };
         setterBucket = null; // fragment processing is finished - so don't accumulate more setters
@@ -544,7 +553,7 @@ var Modstache = function() {
             let detail = GetPropertyDetail(model, model, specifier, null);
             if (detail) {
                 let t = detail.parent[detail.propertyName];
-                if (t instanceof DocumentFragment)
+                if (t instanceof DocumentFragment || t instanceof String)
                     return t;
             }
         }

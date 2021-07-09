@@ -322,6 +322,19 @@ test('Test with array modified template', function (assert) {
     assert.deepEqual(result, expected);
 });
 
+test('Test with array mustache replacement', function (assert) {
+    var html = '<div><div {}="array">{{text}}</div></div>';
+    var data = { array: [{ text: 'One'}, { text: 'Two' }] };
+    var template = document.createElement("template");
+
+    template.innerHTML = html;
+    _M_.fill(template.content, data, { removeStache: true });
+
+    var result = template.innerHTML;
+    var expected = '<div><div>One</div><div>Two</div></div>'
+    assert.deepEqual(result, expected);
+});
+
 test('Test {if} directive', function (assert) {
     var html = '<div><div {}="{if}:hide">Hidden</div><div {}="{if}:show">Shown</div></div>';
     var template = document.createElement("template");

@@ -1,5 +1,10 @@
 # Modstache Change Log
 
+### 2021-06-26 - Version 1.1.0
+
+Check for mustache syntax in array template, string template also supported
+Added mustacheInArrayTemplate option
+
 ### 2021-06-26 - Version 1.0.4
 
 Removed reactive bindings on array deletions
