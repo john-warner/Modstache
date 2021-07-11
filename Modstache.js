@@ -13,7 +13,7 @@ var Modstache = function() {
 
     'use strict';
 
-    let version = '1.1.0';
+    let version = '1.1.1';
   
     let exports = { version: version };
     let defaultOptions = {
@@ -44,6 +44,7 @@ var Modstache = function() {
     };
     let setterBucket = null; // used to keep track of setters for current array fragment
     let reactiveSetters = new WeakMap(); // used to keep track of element reactive setter functions by object and property name
+    let domCache = new WeakMap();
 
     function GetPropertyDetail(root, obj, path, baseArray, baseObject) {
         var detail = {
@@ -447,7 +448,6 @@ var Modstache = function() {
         let template = element.cloneNode(true);
         let parent = element.parentNode;
         let createdElements = [];
-        let fragment = new DocumentFragment();
         var proxy;
         var templateSpecifier;
 
@@ -496,48 +496,92 @@ var Modstache = function() {
                 template = template.outerHTML;
         }
 
-        let context = GetFilledContext(template, templateSpecifier, parent, createdElements, models, options, propDetail.base);
+        let context = GetFilledContext(template, templateSpecifier, parent, createdElements, options, propDetail.base);
 
         // replace with proxy before filling in case model functions need to change model
         if (options.reactive) {
-            propDetail.parent[propDetail.propertyName] = proxy = GetFilledProxy(context); // repace array with proxy
+            propDetail.parent[propDetail.propertyName] = proxy = GetFilledProxy(context, models); // repace array with proxy
             context.proxy = proxy;
         }
-
-        models.forEach((m) => {
-            let dom = GetTemplate(context, m);
-            createdElements.push(CreateFilledElement(proxy, dom, m, fragment, null, options, context.base));
-        });
-
-        parent.insertBefore(fragment, element);
-
-        if (createdElements.length === 0) { // empty array so insert placeholder
-            context.placeholder = document.createElement(PlaceholderTag); // template element won't affect layout
-            parent.insertBefore(context.placeholder, element);
+        context.placeholder = document.createElement(PlaceholderTag); // slot element won't affect layout
+        if (models.length > 0) {
+            context.elementCount = Hydrate(context, models, element, createdElements);
         }
+        context.models = models;
 
+        if (context.elementCount === 0)
+            parent.insertBefore(context.placeholder, element);
+
+        context.sibling = element.nextSibling;
         parent.removeChild(element);
     }
 
-    function CreateFilledElement(modelArray, template, model, parent, nextElement, options, base) {
+    function Hydrate(context, models, before, elements) {
+        if (models.length == 0) {
+            return 0;
+         }
+        if (models.length == 1) {
+            if (models[0]) {
+                elements.push(CreateFilledElement(context, models[0], context.parent, before));
+                return 1;
+            }
+        }
+        else {
+            return HydrateMultiple(context, models, before, elements);
+        }
+
+        return 0;
+    }
+
+    function HydrateMultiple(context, models, before, elements) {
+        let fragment = new DocumentFragment();
+        let count = 0;
+ 
+        models.forEach((m,i) => {
+            if (m) {
+             elements[i] = CreateFilledElement(context, m, fragment, null);
+             count++;
+            }
+        });
+
+        context.parent.insertBefore(fragment, before);
+
+        return count;
+    }
+
+    function CreateFilledElement(context, model, parent, nextElement) {
+        let usedIndex = context.models.indexOf(model);
+        if (usedIndex >= 0) {
+            let e = context.elements[usedIndex];
+            if (e) {
+                parent.insertBefore(e.e, nextElement);
+                context.models[usedIndex] = null;
+                context.elements[usedIndex] = null;
+                context.elementCount--;
+                return e;
+            }
+        }
+
+        let cached = domCache.get(model);
+        if (cached) {
+            RestoreReactiveAssignments(cached.s);
+            parent.insertBefore(cached.e, nextElement);
+            return cached;
+        }
+
+        let template = GetTemplate(context, model);
+
         setterBucket = new Set();
 
         if (typeof template === "string") {
-            template = fragment(FillHTML(template, model, options, modelArray, base));
+            template = fragment(FillHTML(template, model, context.options, context.proxy, context.base)).firstElementChild;
         }
         else {
             template = template.cloneNode(true);
         }
 
-        let e = FillDOM(template, model, options, modelArray, base);
-        if (nextElement) {
-            parent.insertBefore(e, nextElement);
-            e = nextElement.previousSibling;
-        }
-        else {
-            parent.appendChild(e);
-            e = parent.lastChild;
-        }
+        let e = FillDOM(template, model, context.options, context.proxy, context.base);
+        parent.insertBefore(e, nextElement);
 
         let result = { e: e, s: setterBucket };
         setterBucket = null; // fragment processing is finished - so don't accumulate more setters
@@ -561,94 +605,156 @@ var Modstache = function() {
         return defaultTemplate;
     }
 
-    function GetFilledContext(template, templateSpecifier, parent, createdElements, models, options, base) {
+    function GetFilledContext(template, templateSpecifier, parent, createdElements, options, base) {
         return {
             template: template,
             templateSpecifier : templateSpecifier,
             parent: parent,
             elements: createdElements,
-            models: models,
+            models: [], // set to array used by proxy after initial hydration
+            elementCount: 0, // increase/descrease as dom elements are added/removed
             options: options,
             base: base,
             proxy: null, // real proxy to be added if reactive is enabled
+            sibling: null, // next unmanaged sibling
             placeholder: null // placeholder element for empty list
         };
     }
 
     const deleteElements = (context, start, deleteCount) => {
+        let elements = [];
+
         if (isNaN(deleteCount))
             deleteCount = context.elements.length;
         else if (deleteCount <= 0)
             return; // don't delete
         let end = Math.min(start+deleteCount, context.elements.length);
 
-        if (start === 0 && end > 0 && end === context.elements.length) { // add placeholder
-            context.placeholder = context.placeholder || document.createElement(PlaceholderTag);
-            context.parent.insertBefore(context.placeholder, context.elements[0].e);
+        for (let i=start; i<end; i++) {
+            let e = context.elements[i];
+            if (e) {
+                domCache.set(context.models[i], e); // reuse unless state change
+                elements.push(e);
+                context.elements[i] = null;
+            }
         }
 
-        for (let i=start; i<end; i++) {
-            context.parent.removeChild(context.elements[i].e);
-            RemoveReactiveAssignments(context.elements[i].s);
+        if (context.elementCount > 0 && context.elementCount === elements.length) { // add placeholder
+            context.parent.insertBefore(context.placeholder, elements[0].e);
         }
-        context.elements.splice(start, deleteCount);
+
+        elements.forEach((e) => {
+            context.parent.removeChild(e.e);
+            RemoveReactiveAssignments(e.s);
+        });
+
+        context.elementCount -= elements.length;
+    };
+
+    const getNextElement = (context, start) => {
+        if (context.elementCount === 0) {
+            return context.placeholder;
+        }
+        else {
+            for (; start < context.elements.length; start++) {
+                if (context.elements[start])
+                    return context.elements[start].e;
+            }
+        }
+
+        return context.sibling;
     };
 
     const insertElements = (context, start, models) => {
         if (models.length > 0) {
-            let beforeElement = (context.elements.length === 0) ? 
-                context.placeholder : 
-                (start < context.elements.length) ? context.elements[start].e : context.elements[context.elements.length-1].e.nextElementSibling;
+            let beforeElement = getNextElement(context, start);
             let newElements = [];
-            let fragment = new DocumentFragment();
 
-            models.forEach((m) => {
-                let dom = GetTemplate(context, m);
-                newElements.push(CreateFilledElement(context.proxy, dom, m, fragment, null, context.options, context.base));
-            });
-
-            if (beforeElement)
-                context.parent.insertBefore(fragment, beforeElement);
-            else
-                context.parent.appendChild(fragment);
+            let added = Hydrate(context, models, beforeElement, newElements);
             
-            if (beforeElement && beforeElement === context.placeholder)
+            if (beforeElement === context.placeholder)
                 context.parent.removeChild(beforeElement); // clear placeholder
-            context.elements.splice(start,0,...newElements);
+
+            context.elementCount += added;
+
+            return newElements;
         }
+        return null;
     };
     const push = (context) => function (...models)  {
-        insertElements(context, context.models.length, models);
+        let elements = insertElements(context, context.models.length, models);
+        context.elements.push(...elements);
         return context.models.push(...models);
     };
     const unshift = (context) => function (...models) {
-        insertElements(context, 0, models);
+        let elements = insertElements(context, 0, models);
+        context.elements.unshift(...elements);
         return context.models.unshift(...models);
     };
     const splice = (context) => function (start, deleteCount, ...models) {
         start = (start < 0) ? Math.max(0, context.models.length-start) : Math.min(start, context.models.length);
         deleteElements(context, start, deleteCount);
-        insertElements(context, start, models);
+        // TODO: if models are already inserted, then delete before inserting in correct spot
+        let elements = insertElements(context, start, models);
+        if (elements)
+            context.elements.splice(start, deleteCount, ...elements);
+        else
+            context.elements.splice(start, deleteCount);
         return context.models.splice(...arguments);
     };
     const pop = (context) => function () {
         deleteElements(context, context.models.length-1, 1);
+        context.elements.pop(...arguments);
         const el = context.models.pop(...arguments);
         return el;
     };
     const shift = (context) => function () {
         deleteElements(context, 0, 1);
+        context.elements.shift(...arguments);
         const el = context.models.shift(...arguments);
         return el;
     };
-    
-    function GetFilledProxy(context) {
+    const sort = (context) => function () {
+        deleteElements(context, 0, context.models.length);
+        let models = [...context.models];
+        context.elements.splice(0);
+        context.models.splice(0);
+        models.sort(...arguments);
+        let elements = insertElements(context, 0, models);
+        context.elements.splice(0, 0, ...elements);
+        context.models.splice(0, 0, ...models);
+        return context.proxy;
+    };
+    const replaceElement = (context) => function(index, value) {
+        if (context.elements[index]) {
+            deleteElements(context, index, 1);
+            context.elements[index] = null;
+        }
+        if (value) {
+            // let pos = context.models.indexOf(value);
+            // if (pos >= 0 && pos != index) {
+            //     deleteElements(context, pos, 1);
+            //     context.elements[pos] = null;
+            //     context.models[pos] = null;
+            // }
+            let element = insertElements(context, index, [value]);
+            context.elements[index] = element[0];
+            context.models[index] = value;
+        }
+        else {
+            context.models[index] = null;
+        }
+    };
+
+    function GetFilledProxy(context, models) {
         let modifiers = {
             push: push(context),
             unshift: unshift(context),
             splice: splice(context),
             pop: pop(context),
-            shift: shift(context)
+            shift: shift(context),
+            sort: sort(context),
+            replace: replaceElement(context)
         };
         let handler = {
             get: function(target, property) {
@@ -660,6 +766,7 @@ var Modstache = function() {
                         case 'splice': return modifiers.splice;
                         case 'pop': return modifiers.pop;
                         case 'shift': return modifiers.shift;
+                        case 'sort': return modifiers.sort;
                         default: return val.bind(target);
                     }
                 }
@@ -668,7 +775,7 @@ var Modstache = function() {
             },
             set: function(target, property, value, receiver) {
                 if (!isNaN(property)) { // replacing setting specific index
-                    modifiers.splice(property, 1, value);
+                    modifiers.replace(property*1, value);
                 }
                 if (property ==='length') {
                     if (target.length > value) { // array reduced in size
@@ -680,7 +787,7 @@ var Modstache = function() {
             }
         };
 
-        return new Proxy(context.models, handler);
+        return new Proxy(models, handler);
     }
 
     function GetDataValue(data, element, stacheInfo) {
@@ -762,8 +869,8 @@ var Modstache = function() {
             let descriptor = {
                 get: (isFunction(get)) ? get : () => currentValue,
                 set: (isFunction(set)) ? 
-                        (v) => { currentValue = v; setters.forEach((s) => s(v) ); set(v); } : 
-                        (v) => { currentValue = v; setters.forEach((s) => s(v)); },
+                        (v) => { currentValue = v; setters.forEach((s) => s(v) ); domCache = new WeakMap(); set(v); } : 
+                        (v) => { currentValue = v; setters.forEach((s) => s(v));  domCache = new WeakMap(); },
                 configurable: propDetail.descriptor.configurable,
                 enumerable: propDetail.descriptor.enumerable
             };
@@ -790,7 +897,15 @@ var Modstache = function() {
             let propertySetters = descriptor.p;
             propertySetters.delete(descriptor.s);
         });
-        setters.clear();
+        //setters.clear();
+    }
+
+    function RestoreReactiveAssignments(setters) {
+        setters.forEach((descriptor) => {
+            let propertySetters = descriptor.p;
+            propertySetters.add(descriptor.s);
+        });
+
     }
 
     exports.fill = Fill;

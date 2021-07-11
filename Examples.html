@@ -89,5 +89,22 @@
             Root object can be changed for child elements: <span {}="message">Unprocessed Message</span>
         </div>
     </div>
+    <div id="sorttest">
+        Sort test (click on header to sort):
+        <table border="1">
+            <thead>
+                <tr>
+                    <th {}="onclick:sortById">Id</th>
+                    <th {}="onclick:sortByName">Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr {}="sortList">
+                    <td {}="id"></td>
+                    <td {}="name"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </body>
 </html>

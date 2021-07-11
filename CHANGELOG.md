@@ -1,5 +1,10 @@
 # Modstache Change Log
 
+### 2021-07-09 - Version 1.1.1
+
+Optimizations - caching dom elements for reuse
+Added support for Array.sort
+
 ### 2021-06-26 - Version 1.1.0
 
 Check for mustache syntax in array template, string template also supported
