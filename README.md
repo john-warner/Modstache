@@ -305,6 +305,7 @@ The passed DOM fragment is modified and returned or a new fragment is created fr
 * reactive (true) - modify data object to affect target fragment when changed
 * stache ('{}') - name of the attribute to use for stache replacement specification
 * mustacheInArrayTemplate (true) - check for use of mustache syntax "{{value}}" in array template
+* cache - enable/disable caching of deleted elements between reactive changes
 
 
 ### Directives

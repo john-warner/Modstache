@@ -13,7 +13,7 @@ var Modstache = function() {
 
     'use strict';
 
-    let version = '1.1.1';
+    let version = '1.1.2';
   
     let exports = { version: version };
     let defaultOptions = {
@@ -24,6 +24,7 @@ var Modstache = function() {
         reactive: true, // changes to model are reflected in elements
         stache: '{}', // staching attribute name
         mustacheInArrayTemplate: true, // check for mustache entries in array template
+        cache: true, // cache deleted elements between reactive assignments
         events: { // events filled in by attribute or with default option
             oninit: null,
             onremoved: null,
@@ -101,7 +102,7 @@ var Modstache = function() {
     }
 
     const fragment = (html) => { var tpl = document.createElement('template'); tpl.innerHTML = html; return tpl.content;  };
-    const isPlainObject = (o) => Object.prototype.toString.call(o) === '[object Object]';
+    const isPlainObject =  o => o?.constructor === Object; // (o) => Object.prototype.toString.call(o) === '[object Object]';
     const isFunction = (f) => typeof f === 'function';
     const GetStacheContext = (e, propDetail, options) => {
         return {
@@ -114,7 +115,7 @@ var Modstache = function() {
             base: propDetail.base
         };
     };
-    const GetStacheAttribute = (o) => o.stache.replace('{','\\{').replace('}','\\}');
+    const GetStacheAttribute = (o) => (o.stache === '{}') ? '\\{\\}' : o.stache; //o.stache.replace('{','\\{').replace('}','\\}');
 
     function Fill(template, data, options = defaultOptions) {
         if (typeof template === "string")
@@ -143,7 +144,7 @@ var Modstache = function() {
             // Get the value
             let propDetail = null;
             if (match.startsWith('{base}.')) {
-                match = match.replace('{base}.', '');
+                match = match.substring(7); // match.replace('{base}.', '');
                 propDetail = GetPropertyDetail(data, baseObject, match, baseArray, baseObject);
             }
             else {
@@ -229,7 +230,7 @@ var Modstache = function() {
                     }
                     var propDetail = null;
                     if (ss.startsWith('{base}.')) {
-                        ss = ss.replace('{base}.', '');
+                        ss = ss.substring(7); // ss.replace('{base}.', '');
                         propDetail = GetPropertyDetail(data, baseObject, ss, baseArray, baseObject);
                     }
                     else {
@@ -534,24 +535,25 @@ var Modstache = function() {
     }
 
     function HydrateMultiple(context, models, before, elements) {
-        let fragment = new DocumentFragment();
+        //let fragment = new DocumentFragment();
         let count = 0;
  
         models.forEach((m,i) => {
             if (m) {
-             elements[i] = CreateFilledElement(context, m, fragment, null);
-             count++;
+                //elements[i] = CreateFilledElement(context, m, fragment, null);
+                elements[i] = CreateFilledElement(context, m, context.parent, before);
+                count++;
             }
         });
 
-        context.parent.insertBefore(fragment, before);
+        //context.parent.insertBefore(fragment, before);
 
         return count;
     }
 
     function CreateFilledElement(context, model, parent, nextElement) {
-        let usedIndex = context.models.indexOf(model);
-        if (usedIndex >= 0) {
+        if (context.models.includes(model)) {
+            let usedIndex = context.models.indexOf(model);
             let e = context.elements[usedIndex];
             if (e) {
                 parent.insertBefore(e.e, nextElement);
@@ -633,7 +635,8 @@ var Modstache = function() {
         for (let i=start; i<end; i++) {
             let e = context.elements[i];
             if (e) {
-                domCache.set(context.models[i], e); // reuse unless state change
+                if (context.options.cache)
+                    domCache.set(context.models[i], e); // reuse unless state change
                 elements.push(e);
                 context.elements[i] = null;
             }
@@ -683,7 +686,8 @@ var Modstache = function() {
     };
     const push = (context) => function (...models)  {
         let elements = insertElements(context, context.models.length, models);
-        context.elements.push(...elements);
+        if (elements)
+            context.elements.push(...elements);
         return context.models.push(...models);
     };
     const unshift = (context) => function (...models) {
@@ -698,8 +702,10 @@ var Modstache = function() {
         let elements = insertElements(context, start, models);
         if (elements)
             context.elements.splice(start, deleteCount, ...elements);
-        else
+        else if (!isNaN(deleteCount))
             context.elements.splice(start, deleteCount);
+        else
+            context.elements.splice(start);
         return context.models.splice(...arguments);
     };
     const pop = (context) => function () {

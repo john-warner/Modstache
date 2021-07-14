@@ -1,5 +1,11 @@
 # Modstache Change Log
 
+### 2021-07-11 - Version 1.1.2
+
+Bug fix for array length assignment, splice
+Added option to enable/disable DOM caching
+Various optimizations
+
 ### 2021-07-09 - Version 1.1.1
 
 Optimizations - caching dom elements for reuse
