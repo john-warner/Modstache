@@ -1,5 +1,14 @@
 # Modstache Change Log
 
+### 2022-10-1 - Version 1.1.4
+
+Bug fix for assigning property with no getter
+Added parentage to context
+
+### 2021-09-12 - Version 1.1.3
+
+Bug fix for removing reactive assignments
+
 ### 2021-07-11 - Version 1.1.2
 
 Bug fix for array length assignment, splice

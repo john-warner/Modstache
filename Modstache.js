@@ -5,7 +5,7 @@
 //
 // MIT License
 //
-// Copyright (c) 2020 - John Warner
+// Copyright (c) 2022 - John Warner
 
 /*jshint esversion: 9 */
 
@@ -13,7 +13,7 @@ var Modstache = function() {
 
     'use strict';
 
-    let version = '1.1.2';
+    let version = '1.1.4';
   
     let exports = { version: version };
     let defaultOptions = {
@@ -47,7 +47,7 @@ var Modstache = function() {
     let reactiveSetters = new WeakMap(); // used to keep track of element reactive setter functions by object and property name
     let domCache = new WeakMap();
 
-    function GetPropertyDetail(root, obj, path, baseArray, baseObject) {
+    function GetPropertyDetail(root, obj, path, baseArray, baseObject = null, parentContext = null) {
         var detail = {
             base: (baseObject) ? baseObject : root,
             root: root,
@@ -55,11 +55,13 @@ var Modstache = function() {
             propertyName: '',
             descriptor: null,
             array: baseArray,
-            path: path
+            path: path,
+            parentContext: (parentContext && parentContext.length > 0) ? ((parentContext[0] !== root) ? [root, ...parentContext] : parentContext) : [ root ]
         };
         var current;
         let missing = false;
-        path.split('.').forEach((o) => {
+        let pathSegments = path.split('.');
+        pathSegments.forEach((o,i) => {
             if (missing)
                 return;
 
@@ -73,8 +75,10 @@ var Modstache = function() {
                 current = obj[o];
             }
 
-            if (typeof (current) === 'undefined')
-                missing = true;
+            if (typeof (current) === 'undefined') {
+                if (i < pathSegments.length - 1 || !(detail.propertyName in detail.parent)) // !detail.parent.hasOwnProperty(detail.propertyName)) // no setter defined
+                    missing = true;
+            }
         });
 
         if (!missing) {
@@ -112,7 +116,8 @@ var Modstache = function() {
             key: propDetail.propertyName,
             array: propDetail.array,
             events: options.events,
-            base: propDetail.base
+            base: propDetail.base,
+            parentage: propDetail.parentContext
         };
     };
     const GetStacheAttribute = (o) => (o.stache === '{}') ? '\\{\\}' : o.stache; //o.stache.replace('{','\\{').replace('}','\\}');
@@ -168,7 +173,7 @@ var Modstache = function() {
     
     }
 
-    function FillDOM(dom, data, options = defaultOptions, baseArray = null, baseObject = null) {
+    function FillDOM(dom, data, options = defaultOptions, baseArray = null, baseObject = null, parentContext = null) {
         options = GetAllOptionSettings(options);
 
         let stacheSelector = GetStacheAttribute(options);
@@ -231,10 +236,10 @@ var Modstache = function() {
                     var propDetail = null;
                     if (ss.startsWith('{base}.')) {
                         ss = ss.substring(7); // ss.replace('{base}.', '');
-                        propDetail = GetPropertyDetail(data, baseObject, ss, baseArray, baseObject);
+                        propDetail = GetPropertyDetail(data, baseObject, ss, baseArray, baseObject, parentContext);
                     }
                     else {
-                        propDetail = GetPropertyDetail(data, data, ss, baseArray, baseObject);
+                        propDetail = GetPropertyDetail(data, data, ss, baseArray, baseObject, parentContext);
                     }
                     if (propDetail != null) {
                         var value = propDetail.parent[propDetail.propertyName]; // GetValue(data, ss);
@@ -366,7 +371,7 @@ var Modstache = function() {
                 //     AssignProperty(elemProperty, value, propDetail, info, options);
                 // }
                 // property prioritized over attribute
-                let elemProperty = GetPropertyDetail(element, element, attribute, null);
+                let elemProperty = GetPropertyDetail(element, element, attribute, null, null);
                 if (elemProperty !== null || !element.hasAttribute(attribute)) {
                     AssignProperty(elemProperty, value, propDetail, info, options, element);
                 }
@@ -463,7 +468,7 @@ var Modstache = function() {
                     templateSpecifier =  specifier[1];
                 }
                 else {
-                    let directiveDetail = GetPropertyDetail(propDetail.root, propDetail.parent, specifier[1], models);
+                    let directiveDetail = GetPropertyDetail(propDetail.root, propDetail.parent, specifier[1], models, null, propDetail.parentContext);
                     if (directiveDetail) {
                         let value = directiveDetail.parent[directiveDetail.propertyName];
                         ProcessDirective(specifier[0], element, value, directiveDetail, options, processed, status);                 
@@ -497,7 +502,7 @@ var Modstache = function() {
                 template = template.outerHTML;
         }
 
-        let context = GetFilledContext(template, templateSpecifier, parent, createdElements, options, propDetail.base);
+        let context = GetFilledContext(template, templateSpecifier, parent, createdElements, options, propDetail.base, propDetail.parentContext);
 
         // replace with proxy before filling in case model functions need to change model
         if (options.reactive) {
@@ -582,7 +587,7 @@ var Modstache = function() {
             template = template.cloneNode(true);
         }
 
-        let e = FillDOM(template, model, context.options, context.proxy, context.base);
+        let e = FillDOM(template, model, context.options, context.proxy, context.base, context.parentContext);
         parent.insertBefore(e, nextElement);
 
         let result = { e: e, s: setterBucket };
@@ -607,7 +612,7 @@ var Modstache = function() {
         return defaultTemplate;
     }
 
-    function GetFilledContext(template, templateSpecifier, parent, createdElements, options, base) {
+    function GetFilledContext(template, templateSpecifier, parent, createdElements, options, base, parentContext) {
         return {
             template: template,
             templateSpecifier : templateSpecifier,
@@ -619,7 +624,8 @@ var Modstache = function() {
             base: base,
             proxy: null, // real proxy to be added if reactive is enabled
             sibling: null, // next unmanaged sibling
-            placeholder: null // placeholder element for empty list
+            placeholder: null, // placeholder element for empty list,
+            parentContext: parentContext
         };
     }
 
@@ -899,19 +905,22 @@ var Modstache = function() {
     }
 
     function RemoveReactiveAssignments(setters) {
-        setters.forEach((descriptor) => {
-            let propertySetters = descriptor.p;
-            propertySetters.delete(descriptor.s);
-        });
+        if (setters) {
+            setters.forEach((descriptor) => {
+                let propertySetters = descriptor.p;
+                propertySetters.delete(descriptor.s);
+            });
+        }
         //setters.clear();
     }
 
     function RestoreReactiveAssignments(setters) {
-        setters.forEach((descriptor) => {
-            let propertySetters = descriptor.p;
-            propertySetters.add(descriptor.s);
-        });
-
+        if (setters) {
+            setters.forEach((descriptor) => {
+                let propertySetters = descriptor.p;
+                propertySetters.add(descriptor.s);
+            });
+        }
     }
 
     exports.fill = Fill;

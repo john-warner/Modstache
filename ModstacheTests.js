@@ -213,6 +213,19 @@ test('Test with array', function (assert) {
     assert.deepEqual(result, expected);
 });
 
+test('Test with child array', function (assert) {
+    var html = '<div {}="parent"><div {}="child;text"></div></div>';
+    var data = { parent: [ { name: 'Parent', child: [{ text: (ctx) => ctx.parentage[1].name + ':One'}, { text: 'Two' }] }] };
+    var template = document.createElement("template");
+
+    template.innerHTML = html;
+    _M_.fill(template.content, data, { removeStache: true });
+
+    var result = template.innerHTML;
+    var expected = '<div><div>Parent:One</div><div>Two</div></div>'
+    assert.deepEqual(result, expected);
+});
+
 test('Test with array push', function (assert) {
     var html = '<div><div {}="text"></div></div>';
     var data = { text: [{ text: 'One'}, { text: 'Two' }] };
