@@ -1,4 +1,7 @@
 # modstache
+
+See the Modstache website for the latest documentation and examples at [Modstache.com](http://www.modstache.com)
+
 The Modstache utility library can create and/or assign DOM element properties or attributes through data objects. Replace HTML strings using mustache syntax {{}} or through "{}" attribute definition. The data object can also become reactive, where changing a property value will reflect immediately in the DOM.
 
 This is not a full featured framework, such as Angular, React or Vue. There is no shadow/virtual DOM or element creation based on encoded values. Operations are made directly with HTML strings for the mustache "{{}}" replacement and DOM fragments/trees replacement with the "{}" attribute values. This allows for quick and automatic assignment of the data model to the UI components.
@@ -9,7 +12,7 @@ Data passed for assignment can be any needed value for the DOM element. The defa
  
  If an assignment is made with a data property containing an object, then the new object's keys are used to assign to specify the attributes/properties and values of the DOM element.
 
- If an assignment is made with an array, then the DOM element and children are duplicated for each entry in the array. Each array entry is used as the model for the new elements.
+ If an assignment is made with an array, then the DOM element and children are duplicated for each entry in the array. Each array entry is used as the model for the new elements. Note that the identifier key used to identify the array will also be used when processing the children. Care must be taken when using the same key name in the child objects.
 
 To use the Modstache library, include Modstache.js or Modstache.min.js file:
 
@@ -249,6 +252,25 @@ The following methods can be used to clear the reactive nature of the data:
 ```
 The UI can be filled again with the new object to make it reactive.
 
+#### Selectively enabling or disabling reactive data
+
+The reactive option setting can be superceded in several ways to selectively enable or disable reactive assignments.
+This is useful because reactivity remains active for the life of the data object. This can result in deleted DOM elements persisting in memory if they have been assigned to reactive data. Note that The reactive assignments for elements created using reactive arrays are managed by Modstache, but not for elements removed externally.
+
+To enable a reactive assignment, include a "+" after the data property name in the stache attribute assignment.
+
+For example:
+ ```html
+    <input type="text" {}="value:message+" value="" />
+```
+
+To disable a reactive assignment, include a "-" after ther data property name in the stache attribute assignment.
+
+For example:
+ ```html
+    <input type="text" {}="value:message-" value="" />
+```
+
 #### Modify model when form changes
 
 The reactive feature for Modstache is one way, meaning that UI elements are modified when the data is changed. It is possible to modify
@@ -282,6 +304,8 @@ The passed DOM fragment is modified and returned or a new fragment is created fr
 * alwaysSetTranslatedProperty (false) - make sure property is defined if specified in translation object
 * reactive (true) - modify data object to affect target fragment when changed
 * stache ('{}') - name of the attribute to use for stache replacement specification
+* mustacheInArrayTemplate (true) - check for use of mustache syntax "{{value}}" in array template
+* cache - enable/disable caching of deleted elements between reactive changes
 
 
 ### Directives
@@ -294,5 +318,6 @@ Directives are properties in the stache attribute that require special handling.
 * {oninit} - the associated function is called after the element has been processed
 * {template} - specifies a template to use for an array element
 * {base} - Used to refer to the original object used to fill. Eg. {}="textContent:{base}.message"
+* {nonreactive} - Assignments to left of this directive in stache attribute will not be assigned reactively
 
 

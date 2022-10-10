@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
-    <script src="../SSimple/SSimple.min.js"></script>
+    <script src="./lib/SSimple.min.js"></script>
     <script src="Modstache.js"></script>
     <script src="Example.js"></script>
 </head>
@@ -59,7 +59,7 @@
         <br />
         <ul style="margin-bottom:10px;">
             <li>Before</li>
-            <li {}="options;value:value;">
+            <li id="option{{value}}" {}="options;value:value;">
                 <span {}="text"></span>
                 <span {}="onclick:{base}.deleteOption" style="cursor:pointer;font-size:small;font-weight:bold;color:green;">x</span>
                 <span {}="onclick:{base}.positionOption" style="cursor:pointer;font-size:small;font-weight:bold;color:orangered;">*</span>
@@ -88,6 +88,23 @@
         <div {}="{root}:roottest">
             Root object can be changed for child elements: <span {}="message">Unprocessed Message</span>
         </div>
+    </div>
+    <div id="sorttest">
+        Sort test (click on header to sort):
+        <table border="1">
+            <thead>
+                <tr>
+                    <th {}="onclick:sortById">Id</th>
+                    <th {}="onclick:sortByName">Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr {}="sortList">
+                    <td {}="id"></td>
+                    <td {}="name"></td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </body>
 </html>

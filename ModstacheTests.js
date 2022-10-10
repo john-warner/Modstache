@@ -140,6 +140,34 @@ test('Test reactive', function (assert) {
     assert.deepEqual(result, expected);
 });
 
+test('Test selective reactive disable', function (assert) {
+    var html = '<div {}="value-"></div>';
+    var template = document.createElement("template");
+    var data = { value: 'Hello' };
+
+    template.innerHTML = html;
+    _M_.fill(template.content, data, { removeStache: true });
+    data.value = 'Bye';
+
+    var result = template.innerHTML;
+    var expected = "<div>Hello</div>";
+    assert.deepEqual(result, expected);
+});
+
+test('Test selective reactive enable', function (assert) {
+    var html = '<div {}="value+"></div>';
+    var template = document.createElement("template");
+    var data = { value: 'Hello' };
+
+    template.innerHTML = html;
+    _M_.fill(template.content, data, { removeStache: true, reactive: false });
+    data.value = 'Bye';
+
+    var result = template.innerHTML;
+    var expected = "<div>Bye</div>";
+    assert.deepEqual(result, expected);
+});
+
 // test('Test input change', function (assert) {
 //     // var html = '<input type="text" {}="onchange:value>message" />';
 //     // var template = document.createElement("template");
@@ -276,6 +304,34 @@ test('Test with array index assignment', function (assert) {
     assert.deepEqual(result, expected);
 });
 
+test('Test with array index swap', function (assert) {
+    var html = '<div><div {}="text"></div></div>';
+    var data = { text: [{ text: 'One'}, { text: 'Two' }] };
+    var template = document.createElement("template");
+
+    template.innerHTML = html;
+    _M_.fill(template.content, data, { removeStache: true });
+    let tmp = data.text[1];
+    data.text[1] = data.text[0];
+    data.text[0] = tmp;
+    var result = template.innerHTML;
+    var expected = '<div><div>Two</div><div>One</div></div>'
+    assert.deepEqual(result, expected);
+});
+
+test('Test with array sort', function (assert) {
+    var html = '<div><div {}="text"></div></div>';
+    var data = { text: [{ text: 'Z'}, { text: 'A' }] };
+    var template = document.createElement("template");
+
+    template.innerHTML = html;
+    _M_.fill(template.content, data, { removeStache: true });
+    data.text.sort((a,b) => { if (a.text > b.text) return 1; else if (a.text < b.text) return -1; return 0;  });
+    var result = template.innerHTML;
+    var expected = '<div><div>A</div><div>Z</div></div>'
+    assert.deepEqual(result, expected);
+});
+
 test('Test with array length assignment', function (assert) {
     var html = '<div><div {}="text"></div></div>';
     var data = { text: [{ text: 'One'}, { text: 'Two' }] };
@@ -304,6 +360,19 @@ test('Test with array modified template', function (assert) {
     _M_.fill(template.content, data, { removeStache: true });
     var result = template.innerHTML;
     var expected = '<div><div>Template One</div><div>Template Two</div></div>'
+    assert.deepEqual(result, expected);
+});
+
+test('Test with array mustache replacement', function (assert) {
+    var html = '<div><div {}="array">{{text}}</div></div>';
+    var data = { array: [{ text: 'One'}, { text: 'Two' }] };
+    var template = document.createElement("template");
+
+    template.innerHTML = html;
+    _M_.fill(template.content, data, { removeStache: true });
+
+    var result = template.innerHTML;
+    var expected = '<div><div>One</div><div>Two</div></div>'
     assert.deepEqual(result, expected);
 });
 

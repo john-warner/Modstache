@@ -1,6 +1,5 @@
 # Modstache Change Log
 
-
 ### 2022-10-1 - Version 1.1.4
 
 Bug fix for assigning property with no getter

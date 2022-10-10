@@ -96,6 +96,7 @@ var ModstacheExample = function() {
         SetupForm();
         SetupForm2();
         RootChangeTest();
+        SortTest();
      }
 
     function PopulateHead() {
@@ -205,6 +206,31 @@ var ModstacheExample = function() {
     function RootChangeTest() {
         let roottest = $$.bind('#roottest');
         _M_.fill(roottest, roottestModel, { removeStache: true });
+    }
+
+    function SortTest() {
+        let model = {
+            sortById: (ctx) => () => { ctx.base.sortList.sort((a,b) => {
+                if(a.id > b.id) return 1;
+                if(a.id < b.id) return -1;
+                return 0;
+            }) },
+            sortByName: (ctx) => () => { ctx.base.sortList.sort((a,b) => {
+                if(a.name > b.name) return 1;
+                if(a.name < b.name) return -1;
+                return 0;
+            }) },
+            sortList: [
+                { id:1, name:'John' },
+                { id:2, name:'Rand' },
+                { id:3, name:'Cindy' },
+                { id:4, name:'Ken' },
+                { id:5, name:'Helen' },
+                { id:6, name:'Allen' }
+            ]
+        };
+        let sorttest = $$.bind("#sorttest");
+        _M_.fill(sorttest, model, { removeStache: true })
     }
 
     return {
