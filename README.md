@@ -187,7 +187,7 @@ Functions in the data are passed an object parameter with the context. It has th
 * key - the key in data containing the data function
 * array - the containing array, if used
 * base - the original object passed into Modstache
-* previous - the previous array context
+* parentage - array of root objects - useful with child arrays
 
 In the example above, ctx would contain the following values for the btn.label specifier:
 
@@ -200,7 +200,7 @@ Javascript
          key: 'label',
          array: null,
          base: state,
-         previous: null
+         parentage: [ state ]
     };
 ```
 

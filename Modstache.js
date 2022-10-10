@@ -1,30 +1,38 @@
 // Modstache
 // Mustache placeholder replacement and reactive model/dom assignment
 //
+// http://www.modstache.com
 //
+// MIT License
+//
+// Copyright (c) 2022 - John Warner
 
 /*jshint esversion: 9 */
 
-var _M_ = Modstache = function() {
+var Modstache = function() {
 
     'use strict';
 
-    var version = '1.0.1';
+    let version = '1.1.4';
   
-    var exports = { version: version };
-    var defaultOptions = {
+    let exports = { version: version };
+    let defaultOptions = {
         removeStache: false, // remove staching attribute in element
         escape: true, // prevent script insertion
         translate: null, // map model to element
         alwaysSetTranslatedProperty: false, // ensure element has attribute defined
         reactive: true, // changes to model are reflected in elements
         stache: '{}', // staching attribute name
+        mustacheInArrayTemplate: true, // check for mustache entries in array template
+        cache: true, // cache deleted elements between reactive assignments
         events: { // events filled in by attribute or with default option
             oninit: null,
             onremoved: null,
             onupdated: null
         }
     };
+    const DisableReactiveAssignment = '-';
+    const EnableReactiveAssignment = '+';
     const PlaceholderTag = 'slot';
     const Directives = {
         if: '{if}',
@@ -32,36 +40,28 @@ var _M_ = Modstache = function() {
         oninit: '{oninit}',
         // onremoved: '{onremoved}', // not working
         // onupdated: '{onupdated}', // not working
-        template: '{template}'
+        template: '{template}',
+        nonreactive: '{nonreactive}'
     };
+    let setterBucket = null; // used to keep track of setters for current array fragment
+    let reactiveSetters = new WeakMap(); // used to keep track of element reactive setter functions by object and property name
+    let domCache = new WeakMap();
 
-    function GetValue(obj, path) {
-        var current;
-        let missing = false;
-        path.split('.').forEach((o) => {
-            if (missing)
-                return;
-
-            current = (typeof current !== 'undefined') ? current[o] : obj[o];
-            if (typeof (current) === 'undefined')
-                missing = true;
-        });
-            
-        return current;
-    }
-
-    function GetPropertyDetail(root, obj, path, baseArray, baseObject) {
+    function GetPropertyDetail(root, obj, path, baseArray, baseObject = null, parentContext = null) {
         var detail = {
             base: (baseObject) ? baseObject : root,
             root: root,
             parent: obj,
             propertyName: '',
             descriptor: null,
-            array: baseArray
+            array: baseArray,
+            path: path,
+            parentContext: (parentContext && parentContext.length > 0) ? ((parentContext[0] !== root) ? [root, ...parentContext] : parentContext) : [ root ]
         };
         var current;
         let missing = false;
-        path.split('.').forEach((o) => {
+        let pathSegments = path.split('.');
+        pathSegments.forEach((o,i) => {
             if (missing)
                 return;
 
@@ -75,8 +75,10 @@ var _M_ = Modstache = function() {
                 current = obj[o];
             }
 
-            if (typeof (current) === 'undefined')
-                missing = true;
+            if (typeof (current) === 'undefined') {
+                if (i < pathSegments.length - 1 || !(detail.propertyName in detail.parent)) // !detail.parent.hasOwnProperty(detail.propertyName)) // no setter defined
+                    missing = true;
+            }
         });
 
         if (!missing) {
@@ -104,7 +106,7 @@ var _M_ = Modstache = function() {
     }
 
     const fragment = (html) => { var tpl = document.createElement('template'); tpl.innerHTML = html; return tpl.content;  };
-    const isPlainObject = (o) => Object.prototype.toString.call(o) === '[object Object]';
+    const isPlainObject =  o => o?.constructor === Object; // (o) => Object.prototype.toString.call(o) === '[object Object]';
     const isFunction = (f) => typeof f === 'function';
     const GetStacheContext = (e, propDetail, options) => {
         return {
@@ -114,10 +116,11 @@ var _M_ = Modstache = function() {
             key: propDetail.propertyName,
             array: propDetail.array,
             events: options.events,
-            base: propDetail.base
+            base: propDetail.base,
+            parentage: propDetail.parentContext
         };
     };
-    const GetStacheAttribute = (o) => o.stache.replace('{','\\{').replace('}','\\}');
+    const GetStacheAttribute = (o) => (o.stache === '{}') ? '\\{\\}' : o.stache; //o.stache.replace('{','\\{').replace('}','\\}');
 
     function Fill(template, data, options = defaultOptions) {
         if (typeof template === "string")
@@ -126,8 +129,9 @@ var _M_ = Modstache = function() {
         return FillDOM(template, data, options);
     }
 
-    function FillHTML(template, data, options = defaultOptions) {
+    function FillHTML(template, data, options = defaultOptions, baseArray = null, baseObject = null) {
         options = GetAllOptionSettings(options);
+        baseObject = baseObject || data;
 
          // Check if the template is a string or a function
         template = isFunction(template) ? template() : template;
@@ -143,18 +147,25 @@ var _M_ = Modstache = function() {
             match = match.slice(2, -2);
     
             // Get the value
-            var val = GetValue(data, match);
-
-            // Replace
-            if (typeof(val) === 'undefined')
-                return '{{' + match + '}}';
+            let propDetail = null;
+            if (match.startsWith('{base}.')) {
+                match = match.substring(7); // match.replace('{base}.', '');
+                propDetail = GetPropertyDetail(data, baseObject, match, baseArray, baseObject);
+            }
             else {
+                propDetail = GetPropertyDetail(data, data, match, baseArray, baseObject);
+            }
+            if (propDetail != null) {
+                let value = propDetail.parent[propDetail.propertyName];
                 if (typeof (val) === 'function')
-                    val = val();
+                    value = value();
                 if (options.escape)
-                    return EscapeForHtml(val);
+                    return EscapeForHtml(value + '');
                 else
-                    return val;
+                    return value + '';
+            }
+            else {
+                return '{{' + match + '}}';
             }
         });
     
@@ -162,7 +173,7 @@ var _M_ = Modstache = function() {
     
     }
 
-    function FillDOM(dom, data, options = defaultOptions, baseArray = null, baseObject = null) {
+    function FillDOM(dom, data, options = defaultOptions, baseArray = null, baseObject = null, parentContext = null) {
         options = GetAllOptionSettings(options);
 
         let stacheSelector = GetStacheAttribute(options);
@@ -172,18 +183,28 @@ var _M_ = Modstache = function() {
         let stachedDOMroot = (dom instanceof DocumentFragment) ? null : dom.getAttribute(options.stache);
 
         baseObject = baseObject || data;
-        if (stachedDOMroot) {
+        if (stachedDOMroot !== null) {
             stached.unshift(dom);
         }
         stached.forEach((e) => {
-            options = GetAllOptionSettings(options);
+            let activeOptions = GetAllOptionSettings(options);
             let status = { removed: false };
             let deferred = false;
 
             if (!processed.includes(e)) {
-                let assignments = e.getAttribute(options.stache).split(';');
+                let assignments = e.getAttribute(activeOptions.stache).split(';');
+                let restoreReactive = null;
 
                 assignments.some((assignment) => {
+                    if (restoreReactive !== null) {
+                        activeOptions.reactive = restoreReactive;
+                        restoreReactive = null;
+                    }
+                    if (assignment === Directives.nonreactive) {
+                        activeOptions.reactive = false; // disable reactive assignment for remaining assignments
+                        return false;
+                    }
+
                     var target = assignment.split(':');
                     var attribute = null;
                     var ss;
@@ -196,6 +217,17 @@ var _M_ = Modstache = function() {
                     else {
                         ss = assignment;
                     }
+                    let lastSSChar = ss[ss.length-1];
+                    if (lastSSChar == DisableReactiveAssignment) {
+                        restoreReactive = activeOptions.reactive;
+                        activeOptions.reactive = false; // disable reactive assignment for this property only
+                        ss = ss.slice(0,-1);
+                    }
+                    else if (lastSSChar == EnableReactiveAssignment) {
+                        restoreReactive = activeOptions.reactive;
+                        activeOptions.reactive = true; // enable reactive assignment for this property only
+                        ss = ss.slice(0,-1);
+                    }
                     if (ss.includes('>')) {
                         let updateFields = ss.split('>');
                         eventUpdateProperty = updateFields[0];
@@ -203,34 +235,34 @@ var _M_ = Modstache = function() {
                     }
                     var propDetail = null;
                     if (ss.startsWith('{base}.')) {
-                        ss = ss.replace('{base}.', '');
-                        propDetail = GetPropertyDetail(data, baseObject, ss, baseArray, baseObject);
+                        ss = ss.substring(7); // ss.replace('{base}.', '');
+                        propDetail = GetPropertyDetail(data, baseObject, ss, baseArray, baseObject, parentContext);
                     }
                     else {
-                        propDetail = GetPropertyDetail(data, data, ss, baseArray, baseObject);
+                        propDetail = GetPropertyDetail(data, data, ss, baseArray, baseObject, parentContext);
                     }
                     if (propDetail != null) {
                         var value = propDetail.parent[propDetail.propertyName]; // GetValue(data, ss);
                         if (typeof value !== 'undefined') {
                             if (attribute && attribute[0] === '{') { // special directive
-                                ProcessDirective(attribute, e, value, propDetail, options, processed, status);
+                                ProcessDirective(attribute, e, value, propDetail, activeOptions, processed, status);
                             }
                             else {
                                 if (attribute == null && translate && translate.hasOwnProperty(ss))
                                     attribute = translate[ss];
 
                                     if (eventUpdateProperty !== null) {
-                                        updatePropertyOnEvent(attribute, e, eventUpdateProperty, ss, propDetail, options);
+                                        updatePropertyOnEvent(attribute, e, eventUpdateProperty, ss, propDetail, activeOptions);
                                     }
                                     else {
-                                        processed.push(FillElementWithData(e, attribute, value, propDetail, options, status));
+                                        processed.push(...FillElementWithData(e, attribute, value, propDetail, activeOptions, status));
                                     }
                             }
                          }
                     }
                     else { // value not found in object - process appropriately
                         if (attribute && attribute[0] === '{') { // special directive
-                            ProcessDirective(attribute, e, null, null, options, processed, status);
+                            ProcessDirective(attribute, e, null, null, activeOptions, processed, status);
                             deferred = true;
                         }
                     }
@@ -238,10 +270,10 @@ var _M_ = Modstache = function() {
                     return status.removed;
                 });
                 if (!deferred) {
-                    if (options.removeStache)
-                        e.removeAttribute(options.stache);
-                    if (options.events.oninit) {
-                        options.events.oninit(e);
+                    if (activeOptions.removeStache)
+                        e.removeAttribute(activeOptions.stache);
+                    if (activeOptions.events.oninit) {
+                        activeOptions.events.oninit(e);
                     }
                 }
             }
@@ -326,19 +358,27 @@ var _M_ = Modstache = function() {
             AssignTextOrObject(element, value, propDetail, info, options);
         }
         else if (Array.isArray(value)) {
-            processed.push(element.querySelectorAll("["+stacheSelector+"]")); // children have been processed
+            processed.push(...element.querySelectorAll("["+stacheSelector+"]")); // children have been processed
             CreateAndFillElements(element, value, propDetail, options, processed, status);
             status.removed = true; // remove processing of the rest of the dom controlled by the array
         }
         else {
             if (attribute) {
-                if (element.hasAttribute(attribute))
-                    AssignAttribute(element, attribute, value, propDetail, info, options);
-                else {
-                    var elemProperty = GetPropertyDetail(element, element, attribute, null);
-                    AssignProperty(elemProperty, value, propDetail, info, options);
+                // if (element.hasAttribute(attribute))
+                //     AssignAttribute(element, attribute, value, propDetail, info, options);
+                // else {
+                //     var elemProperty = GetPropertyDetail(element, element, attribute, null);
+                //     AssignProperty(elemProperty, value, propDetail, info, options);
+                // }
+                // property prioritized over attribute
+                let elemProperty = GetPropertyDetail(element, element, attribute, null, null);
+                if (elemProperty !== null || !element.hasAttribute(attribute)) {
+                    AssignProperty(elemProperty, value, propDetail, info, options, element);
                 }
-            }
+                else if (element.hasAttribute(attribute)) {
+                    AssignAttribute(element, attribute, value, propDetail, info, options);
+                }
+           }
             else if (attribute === '')
                 AssignNothing(element, propDetail, info, options);  // useful for external initialization of element
             else
@@ -365,7 +405,7 @@ var _M_ = Modstache = function() {
             var elemProperty = GetPropertyDetail(element, element, tkey, null);
 
             if (elemProperty !== null) {
-                AssignProperty(elemProperty, dataValue, propDetail, info, options);
+                AssignProperty(elemProperty, dataValue, propDetail, info, options, element);
             }
             else if (element.hasAttribute(tkey)) {
                 AssignAttribute(element, tkey, dataValue, propDetail, info, options);
@@ -373,7 +413,7 @@ var _M_ = Modstache = function() {
             else if (translated && options.alwaysSetTranslatedProperty) {
                 element[tkey] = dataValue;
                 elemProperty = GetPropertyDetail(element, element, tkey, null);
-                AssignProperty(elemProperty, dataValue, propDetail, info, options);
+                AssignProperty(elemProperty, dataValue, propDetail, info, options, element);
             }
         }
     }
@@ -392,7 +432,7 @@ var _M_ = Modstache = function() {
                     propDetail.parent[propDetail.propertyName](value, info);
                 else
                     propDetail.parent[propDetail.propertyName] = value; 
-            }
+            };
         }
         else {
             updater = () => { 
@@ -401,7 +441,7 @@ var _M_ = Modstache = function() {
                     propDetail.parent[propDetail.propertyName](value, info);
                 else
                     propDetail.parent[propDetail.propertyName] = value; 
-            }
+            };
         }
 
         element[event] = updater;
@@ -414,12 +454,12 @@ var _M_ = Modstache = function() {
         let template = element.cloneNode(true);
         let parent = element.parentNode;
         let createdElements = [];
-        let fragment = new DocumentFragment();
         var proxy;
         var templateSpecifier;
 
         // check to see if template is specified
         let assignments = element.getAttribute(options.stache).split(';');
+        let arrayAssignment = -1;
         for (let i=0; i < assignments.length; i++) {
             let assignment = assignments[i];
             let specifier = assignment.split(':');
@@ -428,48 +468,132 @@ var _M_ = Modstache = function() {
                     templateSpecifier =  specifier[1];
                 }
                 else {
-                    let directiveDetail = GetPropertyDetail(propDetail.root, propDetail.parent, specifier[1], models);
+                    let directiveDetail = GetPropertyDetail(propDetail.root, propDetail.parent, specifier[1], models, null, propDetail.parentContext);
                     if (directiveDetail) {
                         let value = directiveDetail.parent[directiveDetail.propertyName];
                         ProcessDirective(specifier[0], element, value, directiveDetail, options, processed, status);                 
                     }
                 }
             }
+            else if (specifier[0] == propDetail.path) {
+                arrayAssignment = i;
+            }
         }
 
-        let context = GetFilledContext(template, templateSpecifier, parent, createdElements, models, options, propDetail.base);
+        // remove array assignment from template in case of same name key in array objects
+        // if (arrayAssignment >= 0) {
+        //     assignments.splice(arrayAssignment, 1);
+        //     let stached = assignments.join(';');
+        //     if (false && stached === '') {
+        //         template.removeAttribute(options.stache);
+        //     }
+        //     else {
+        //         for (let attr = 0; attr < template.attributes.length; attr++) { // can't use setAttribute
+        //             if (template.attributes[attr].name === options.stache) {
+        //                 template.attributes[attr].value = assignments.join(';');
+        //             }
+        //         }
+        //     }
+        // }
+
+        if (options.mustacheInArrayTemplate && !templateSpecifier) {
+            let usesMustache = /\{\{([^}]+)\}\}/g.test(template.outerHTML); // check for Mustache usage in template
+            if (usesMustache)
+                template = template.outerHTML;
+        }
+
+        let context = GetFilledContext(template, templateSpecifier, parent, createdElements, options, propDetail.base, propDetail.parentContext);
 
         // replace with proxy before filling in case model functions need to change model
         if (options.reactive) {
-            propDetail.parent[propDetail.propertyName] = proxy = GetFilledProxy(context); // repace array with proxy
+            propDetail.parent[propDetail.propertyName] = proxy = GetFilledProxy(context, models); // repace array with proxy
             context.proxy = proxy;
         }
-
-        models.forEach((m) => {
-            let dom = GetTemplate(context, m);
-            createdElements.push(CreateFilledElement(proxy, dom, m, fragment, null, options, context.base));
-        });
-
-        parent.insertBefore(fragment, element);
-
-        if (createdElements.length === 0) { // empty array so insert placeholder
-            context.placeholder = document.createElement(PlaceholderTag); // template element won't affect layout
-            parent.insertBefore(context.placeholder, element);
+        context.placeholder = document.createElement(PlaceholderTag); // slot element won't affect layout
+        if (models.length > 0) {
+            context.elementCount = Hydrate(context, models, element, createdElements);
         }
+        context.models = models;
 
+        if (context.elementCount === 0)
+            parent.insertBefore(context.placeholder, element);
+
+        context.sibling = element.nextSibling;
         parent.removeChild(element);
     }
 
-    function CreateFilledElement(modelArray, template, model, parent, nextElement, options, base) {
-        let e = template.cloneNode(true);
+    function Hydrate(context, models, before, elements) {
+        if (models.length == 0) {
+            return 0;
+         }
+        if (models.length == 1) {
+            if (models[0]) {
+                elements.push(CreateFilledElement(context, models[0], context.parent, before));
+                return 1;
+            }
+        }
+        else {
+            return HydrateMultiple(context, models, before, elements);
+        }
 
-        e = FillDOM(e, model, options, modelArray, base);
-        if (nextElement)
-            parent.insertBefore(e, nextElement);
-        else
-            parent.appendChild(e);
+        return 0;
+    }
 
-        return e;
+    function HydrateMultiple(context, models, before, elements) {
+        //let fragment = new DocumentFragment();
+        let count = 0;
+ 
+        models.forEach((m,i) => {
+            if (m) {
+                //elements[i] = CreateFilledElement(context, m, fragment, null);
+                elements[i] = CreateFilledElement(context, m, context.parent, before);
+                count++;
+            }
+        });
+
+        //context.parent.insertBefore(fragment, before);
+
+        return count;
+    }
+
+    function CreateFilledElement(context, model, parent, nextElement) {
+        if (context.models.includes(model)) {
+            let usedIndex = context.models.indexOf(model);
+            let e = context.elements[usedIndex];
+            if (e) {
+                parent.insertBefore(e.e, nextElement);
+                context.models[usedIndex] = null;
+                context.elements[usedIndex] = null;
+                context.elementCount--;
+                return e;
+            }
+        }
+
+        let cached = domCache.get(model);
+        if (cached) {
+            RestoreReactiveAssignments(cached.s);
+            parent.insertBefore(cached.e, nextElement);
+            return cached;
+        }
+
+        let template = GetTemplate(context, model);
+
+        setterBucket = new Set();
+
+        if (typeof template === "string") {
+            template = fragment(FillHTML(template, model, context.options, context.proxy, context.base)).firstElementChild;
+        }
+        else {
+            template = template.cloneNode(true);
+        }
+
+        let e = FillDOM(template, model, context.options, context.proxy, context.base, context.parentContext);
+        parent.insertBefore(e, nextElement);
+
+        let result = { e: e, s: setterBucket };
+        setterBucket = null; // fragment processing is finished - so don't accumulate more setters
+
+        return result;
     }
 
     function GetTemplate(context, model) {
@@ -480,7 +604,7 @@ var _M_ = Modstache = function() {
             let detail = GetPropertyDetail(model, model, specifier, null);
             if (detail) {
                 let t = detail.parent[detail.propertyName];
-                if (t instanceof DocumentFragment)
+                if (t instanceof DocumentFragment || t instanceof String)
                     return t;
             }
         }
@@ -488,93 +612,161 @@ var _M_ = Modstache = function() {
         return defaultTemplate;
     }
 
-    function GetFilledContext(template, templateSpecifier, parent, createdElements, models, options, base) {
+    function GetFilledContext(template, templateSpecifier, parent, createdElements, options, base, parentContext) {
         return {
             template: template,
             templateSpecifier : templateSpecifier,
             parent: parent,
             elements: createdElements,
-            models: models,
+            models: [], // set to array used by proxy after initial hydration
+            elementCount: 0, // increase/descrease as dom elements are added/removed
             options: options,
             base: base,
             proxy: null, // real proxy to be added if reactive is enabled
-            placeholder: null // placeholder element for empty list
+            sibling: null, // next unmanaged sibling
+            placeholder: null, // placeholder element for empty list,
+            parentContext: parentContext
         };
     }
 
     const deleteElements = (context, start, deleteCount) => {
+        let elements = [];
+
         if (isNaN(deleteCount))
             deleteCount = context.elements.length;
         else if (deleteCount <= 0)
             return; // don't delete
         let end = Math.min(start+deleteCount, context.elements.length);
 
-        if (start === 0 && end > 0 && end === context.elements.length) { // add placeholder
-            context.placeholder = context.placeholder || document.createElement(PlaceholderTag);
-            context.parent.insertBefore(context.placeholder, context.elements[0]);
+        for (let i=start; i<end; i++) {
+            let e = context.elements[i];
+            if (e) {
+                if (context.options.cache)
+                    domCache.set(context.models[i], e); // reuse unless state change
+                elements.push(e);
+                context.elements[i] = null;
+            }
         }
 
-        for (let i=start; i<end; i++) {
-            context.parent.removeChild(context.elements[i]);
-            // if (context.options.events.onremoved)
-            //     context.optionis.events.onremoved(context.elements[i]);
+        if (context.elementCount > 0 && context.elementCount === elements.length) { // add placeholder
+            context.parent.insertBefore(context.placeholder, elements[0].e);
         }
-        context.elements.splice(start, deleteCount);
+
+        elements.forEach((e) => {
+            context.parent.removeChild(e.e);
+            RemoveReactiveAssignments(e.s);
+        });
+
+        context.elementCount -= elements.length;
+    };
+
+    const getNextElement = (context, start) => {
+        if (context.elementCount === 0) {
+            return context.placeholder;
+        }
+        else {
+            for (; start < context.elements.length; start++) {
+                if (context.elements[start])
+                    return context.elements[start].e;
+            }
+        }
+
+        return context.sibling;
     };
 
     const insertElements = (context, start, models) => {
         if (models.length > 0) {
-            let beforeElement = (context.elements.length === 0) ? context.placeholder : (start < context.elements.length) ? context.elements[start] : context.elements[context.elements.length-1].nextElementSibling;
+            let beforeElement = getNextElement(context, start);
             let newElements = [];
-            let fragment = new DocumentFragment();
 
-            models.forEach((m) => {
-                let dom = GetTemplate(context, m);
-                newElements.push(CreateFilledElement(context.proxy, dom, m, fragment, null, context.options, context.base));
-            });
-
-            if (beforeElement)
-                context.parent.insertBefore(fragment, beforeElement);
-            else
-                context.parent.appendChild(fragment);
+            let added = Hydrate(context, models, beforeElement, newElements);
             
-            if (beforeElement && beforeElement === context.placeholder)
+            if (beforeElement === context.placeholder)
                 context.parent.removeChild(beforeElement); // clear placeholder
-            context.elements.splice(start,0,...newElements);
+
+            context.elementCount += added;
+
+            return newElements;
         }
+        return null;
     };
     const push = (context) => function (...models)  {
-        insertElements(context, context.models.length, models);
+        let elements = insertElements(context, context.models.length, models);
+        if (elements)
+            context.elements.push(...elements);
         return context.models.push(...models);
     };
     const unshift = (context) => function (...models) {
-        insertElements(context, 0, models);
+        let elements = insertElements(context, 0, models);
+        context.elements.unshift(...elements);
         return context.models.unshift(...models);
     };
     const splice = (context) => function (start, deleteCount, ...models) {
         start = (start < 0) ? Math.max(0, context.models.length-start) : Math.min(start, context.models.length);
         deleteElements(context, start, deleteCount);
-        insertElements(context, start, models);
+        // TODO: if models are already inserted, then delete before inserting in correct spot
+        let elements = insertElements(context, start, models);
+        if (elements)
+            context.elements.splice(start, deleteCount, ...elements);
+        else if (!isNaN(deleteCount))
+            context.elements.splice(start, deleteCount);
+        else
+            context.elements.splice(start);
         return context.models.splice(...arguments);
     };
     const pop = (context) => function () {
         deleteElements(context, context.models.length-1, 1);
+        context.elements.pop(...arguments);
         const el = context.models.pop(...arguments);
         return el;
     };
     const shift = (context) => function () {
         deleteElements(context, 0, 1);
+        context.elements.shift(...arguments);
         const el = context.models.shift(...arguments);
         return el;
     };
-    
-    function GetFilledProxy(context) {
+    const sort = (context) => function () {
+        deleteElements(context, 0, context.models.length);
+        let models = [...context.models];
+        context.elements.splice(0);
+        context.models.splice(0);
+        models.sort(...arguments);
+        let elements = insertElements(context, 0, models);
+        context.elements.splice(0, 0, ...elements);
+        context.models.splice(0, 0, ...models);
+        return context.proxy;
+    };
+    const replaceElement = (context) => function(index, value) {
+        if (context.elements[index]) {
+            deleteElements(context, index, 1);
+            context.elements[index] = null;
+        }
+        if (value) {
+            // let pos = context.models.indexOf(value);
+            // if (pos >= 0 && pos != index) {
+            //     deleteElements(context, pos, 1);
+            //     context.elements[pos] = null;
+            //     context.models[pos] = null;
+            // }
+            let element = insertElements(context, index, [value]);
+            context.elements[index] = element[0];
+            context.models[index] = value;
+        }
+        else {
+            context.models[index] = null;
+        }
+    };
+
+    function GetFilledProxy(context, models) {
         let modifiers = {
             push: push(context),
             unshift: unshift(context),
             splice: splice(context),
             pop: pop(context),
-            shift: shift(context)
+            shift: shift(context),
+            sort: sort(context),
+            replace: replaceElement(context)
         };
         let handler = {
             get: function(target, property) {
@@ -586,6 +778,7 @@ var _M_ = Modstache = function() {
                         case 'splice': return modifiers.splice;
                         case 'pop': return modifiers.pop;
                         case 'shift': return modifiers.shift;
+                        case 'sort': return modifiers.sort;
                         default: return val.bind(target);
                     }
                 }
@@ -594,7 +787,7 @@ var _M_ = Modstache = function() {
             },
             set: function(target, property, value, receiver) {
                 if (!isNaN(property)) { // replacing setting specific index
-                    modifiers.splice(property, 1, value);
+                    modifiers.replace(property*1, value);
                 }
                 if (property ==='length') {
                     if (target.length > value) { // array reduced in size
@@ -606,11 +799,10 @@ var _M_ = Modstache = function() {
             }
         };
 
-        return new Proxy(context.models, handler);
+        return new Proxy(models, handler);
     }
 
     function GetDataValue(data, element, stacheInfo) {
-        //return (isFunction(data)) ? data(element, stacheInfo.parent, stacheInfo) : data;
         return (isFunction(data)) ? data(stacheInfo, element, stacheInfo.parent) : data;
     }
 
@@ -625,19 +817,18 @@ var _M_ = Modstache = function() {
             ChangeSetter(propDetail, (v) => { 
                 v= GetDataValue(v, element, info); 
                 element.setAttribute(attribute, v); 
-                // if (options.events.onupdated) options.events.onupdated(element.root);
-                return v; });
+                return v; }, element);
         }
     }
 
-    function AssignProperty(elementProp, value, propDetail, info, options) {
+    function AssignProperty(elementProp, value, propDetail, info, options, element) {
         elementProp.parent[elementProp.propertyName] = value;
         if (options.reactive) {
             ChangeSetter(propDetail, (v) => { 
                 v = GetDataValue(v, elementProp.root, info); 
                 elementProp.parent[elementProp.propertyName] =  v;
                 // if (options.events.onupdated) options.events.onupdated(elementProp.root);
-                return v; });
+                return v; }, element);
         }
     }
 
@@ -645,7 +836,7 @@ var _M_ = Modstache = function() {
         if (options.reactive) {
             ChangeSetter(propDetail, (v) => { 
                 v = GetDataValue(v, element, info); 
-                return v; });
+                return v; }, element);
         }
     }
 
@@ -665,29 +856,80 @@ var _M_ = Modstache = function() {
                 else {
                     element.textContent = v;
                 }
-                return v; });
+                return v; }, element);
         }
     }
 
-    function ChangeSetter(propDetail, setter) {
+    function ChangeSetter(propDetail, setter, element) {
         let set = propDetail.descriptor.set;
         let get = propDetail.descriptor.get;
         let currentValue = propDetail.parent[propDetail.propertyName];
-        let descriptor = {
-            get: (isFunction(get)) ? get : () => currentValue,
-            set: (isFunction(set)) ? 
-                    (v) => { currentValue = v; setter(v); set(v); } : 
-                    (v) => { currentValue = v; setter(v); },
-            configurable: propDetail.descriptor.configurable,
-            enumerable: propDetail.descriptor.enumerable
-        };
-        Object.defineProperty(propDetail.parent, propDetail.propertyName, descriptor);
-}
+        let parentPropertySetters = null;
+        let setters = new Set();
+
+        if (!reactiveSetters.has(propDetail.parent)) {
+            parentPropertySetters = new Map();
+            reactiveSetters.set(propDetail.parent, parentPropertySetters);
+        }
+        else {
+            parentPropertySetters = reactiveSetters.get(propDetail.parent);
+        }
+
+        if (!parentPropertySetters.has(propDetail.propertyName)) {
+            AddDescriptorSetter(setters, setter, element);
+
+            let descriptor = {
+                get: (isFunction(get)) ? get : () => currentValue,
+                set: (isFunction(set)) ? 
+                        (v) => { currentValue = v; setters.forEach((s) => s(v) ); domCache = new WeakMap(); set(v); } : 
+                        (v) => { currentValue = v; setters.forEach((s) => s(v));  domCache = new WeakMap(); },
+                configurable: propDetail.descriptor.configurable,
+                enumerable: propDetail.descriptor.enumerable
+            };
+            Object.defineProperty(propDetail.parent, propDetail.propertyName, descriptor);
+
+            parentPropertySetters.set(propDetail.propertyName, setters);
+        }
+        else {
+            setters = parentPropertySetters.get(propDetail.propertyName);
+            AddDescriptorSetter(setters, setter, element);
+        }
+
+        if (setterBucket !== null) {
+            setterBucket.add({ p: setters, s: setter });
+        }
+    }
+
+    function AddDescriptorSetter(setters, setter, element) {
+         setters.add(setter);
+    }
+
+    function RemoveReactiveAssignments(setters) {
+        if (setters) {
+            setters.forEach((descriptor) => {
+                let propertySetters = descriptor.p;
+                propertySetters.delete(descriptor.s);
+            });
+        }
+        //setters.clear();
+    }
+
+    function RestoreReactiveAssignments(setters) {
+        if (setters) {
+            setters.forEach((descriptor) => {
+                let propertySetters = descriptor.p;
+                propertySetters.add(descriptor.s);
+            });
+        }
+    }
 
     exports.fill = Fill;
     exports.fillHTML = FillHTML;
     exports.fillDOM = FillDOM;
     exports.options = SetDefaultOptions;
+    exports.removeReactions = RemoveReactiveAssignments;
  
     return exports;
 }();
+
+var _M_ = Modstache;

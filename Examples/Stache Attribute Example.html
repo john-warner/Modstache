@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+
+<html>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stache Attribute Example</title>
+</head>
+<body>
+
+    <script src="../Modstache.js"></script>
+    
+    <h1>Address</h1>
+
+    <div id="address">
+        <b>Name:</b> <span {}="name;style:nameStyle"></span><br />
+        <b>Address:</b> <span {}="address"></span><br />
+        <b>City:</b> <span {}="city"></span>, <span {}="state"></span> <b>Zipcode:</b> <span {}="zipcode"></span>
+    </div>
+    
+    <script>
+    
+        function Address() {
+    
+            let address = {
+                name: 'John',
+                nameStyle: 'font-weight:bold;color:lime',
+                address: '1234 Maple',
+                city: 'Phoenix',
+                state: 'AZ',
+                zipcode: '85000'
+            };
+    
+            let addressFragment = _M_.fill(document.getElementById('address'), address);
+        }
+    
+        document.addEventListener("DOMContentLoaded", Address);
+    </script>
+    
+
+</body>
+</html>

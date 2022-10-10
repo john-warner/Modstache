@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+
+<html><head>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculations Example</title>
+</head>
+<body>
+
+    <script src="../Modstache.js"></script>
+    
+
+    <h1>Calculate the Full Name</h1>
+
+    <div id="name">
+        <b>First Name:</b> <span {}="firstName"></span><br />
+        <b>Last Name:</b> <span {}="lastName"></span><br />
+        <b>Full Name:</b> <span {}="fullName"></span>
+    </div>
+    
+    <script>
+    
+        function FullName() {
+    
+            let nameModel = {
+                firstName: 'John',
+                lastName: 'Doe',
+                fullName: ({ root }) => root.firstName + ' ' + root.lastName
+            };
+    
+            _M_.fill(document.getElementById('name'), nameModel);
+        }
+    
+        document.addEventListener("DOMContentLoaded", FullName);
+    </script>
+    
+    <h1>Display Current Time</h1>
+    
+    <div id="time">
+        <b>Current Time:</b> <span {}="time"></span>
+    </div>
+    
+    <script>
+    
+        function Time() {
+    
+            let timeModel = {
+                time: (ctx) => {
+                        setInterval(() => { ctx.parent.time = ctx.parent.time; }, 1000); // set up automatic update every second
+                        ctx.parent.time = () => { return (new Date()).toLocaleTimeString(); }; // modify time property to get current time
+                        return ctx.parent.time();
+                    }
+            };
+    
+            _M_.fill(document.getElementById('time'), timeModel);
+        }
+    
+        document.addEventListener("DOMContentLoaded", Time);
+    </script>
+
+
+</body>
+</html>

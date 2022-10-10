@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+
+<html><head>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mustache Example</title>
+</head>
+<body>
+
+    <script src="../Modstache.js"></script>
+    
+    <h1>Mustache Replacement</h1>
+
+    <div id="html">
+        <div>{{message}}</div>
+    </div>
+    
+    <script>
+    
+        function MustacheReplacement() {
+            let data = { message: 'Hello, Modstache!' };
+    
+            let html = document.getElementById('html');
+            let modifiedHTML = Modstache.fillHTML(html.innerHTML, data);
+            html.innerHTML = modifiedHTML;
+        }
+        document.addEventListener("DOMContentLoaded", MustacheReplacement);
+    </script>
+    
+    <h1>Inserting Script</h1>
+    <div id="htmlWithScript">
+        <div>{{htmlWithScript}}</div>
+    </div>
+    
+    <script>
+    
+        function InsertingScript() {
+            let data = { htmlWithScript: 'Alert script is inserted and executed here<script>alert("Modstache is awesome!!");<\/script>' };
+    
+            let htmlWithScript = document.getElementById('htmlWithScript');
+            let modifiedWithScript = Modstache.fillHTML(htmlWithScript.innerHTML, data, { escape: false });
+            htmlWithScript.innerHTML = '';
+            AppendHTMLWithScript(htmlWithScript, modifiedWithScript);
+        }
+    
+        function AppendHTMLWithScript(container, html) {
+            let range = document.createRange();
+            range.setStart(container, 0);
+            container.appendChild(range.createContextualFragment(html));
+        }
+        document.addEventListener("DOMContentLoaded", InsertingScript);
+    </script>
+    
+
+</body>
+</html>

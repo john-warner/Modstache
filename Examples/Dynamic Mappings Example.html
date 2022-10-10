@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+
+<html>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Mappings Example</title>
+</head>
+<body>
+
+    <script src="../Modstache.js"></script>
+    
+    <h1>Dynamic Styling</h1>
+
+    <div id="dynamicExample">
+        <div>
+            <div><input id="bold" type="checkbox" {}="onchange:bold" /><label for="bold">Bold Text</label></div>
+            <div><input id="red" type="checkbox" {}="onchange:red" /><label for="red">Red Text</label></div>
+        </div>
+        <div style="margin-top:10px;">
+            <div {}="styling">Sample Text</div>
+        </div>
+    </div>
+    <script>
+    
+        function dynamicExample() {
+    
+            let dynamicModel = {
+                bold: ({ root }, e) => () => root.styling = (e.checked) ? { fontWeight: 'bold' } : { fontWeight: '' },
+                red: ({ root }, e) => () => root.styling = (e.checked) ? { color: 'red' } : { color: 'black' },
+                styling: {}
+            };
+    
+            _M_.fill(document.getElementById('dynamicExample'), dynamicModel,
+                { translate: { fontWeight: 'style.fontWeight', color: 'style.color' } });
+        }
+    
+        document.addEventListener("DOMContentLoaded", dynamicExample);
+    </script>
+    
+
+</body>
+</html>
