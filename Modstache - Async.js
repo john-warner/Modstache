@@ -5,7 +5,7 @@
 //
 // MIT License
 //
-// Copyright (c) 2023 - John Warner
+// Copyright (c) 2022 - John Warner
 
 /*jshint esversion: 9 */
 
@@ -13,7 +13,7 @@ var Modstache = function() {
 
     'use strict';
 
-    let version = '1.1.5';
+    let version = '1.1.4';
   
     let exports = { version: version };
     let defaultOptions = {
@@ -44,6 +44,7 @@ var Modstache = function() {
         nonreactive: '{nonreactive}'
     };
     let setterBucket = null; // used to keep track of setters for current array fragment
+    let fillTasks = [];
     let reactiveSetters = new WeakMap(); // used to keep track of element reactive setter functions by object and property name
     let domCache = new WeakMap();
 
@@ -127,6 +128,41 @@ var Modstache = function() {
             template = fragment(FillHTML(template, data, options));
 
         return FillDOM(template, data, options);
+    }
+
+    async function FillAsync(template, data, options = defaultOptions) {
+        if (fillTasks?.length) {
+            await Promise.all(fillTasks);
+            fillTasks = RemoveResolvedTasks(fillTasks);
+        }
+
+        if (typeof template === "string")
+            template = fragment(FillHTML(template, data, options));
+
+        let e = FillDOM(template, data, options);
+
+        if (fillTasks.length) {
+            await Promise.all(fillTasks);
+            fillTasks = RemoveResolvedTasks(fillTasks);
+        }
+
+        return e;
+    }
+
+    async function Complete() {
+        if (fillTasks?.length) {
+            await Promise.all(fillTasks);
+            fillTasks = RemoveResolvedTasks(fillTasks);
+        }
+    }
+
+    function RemoveResolvedTasks(tasks) {
+        return tasks.reduce((unresolved, task) => {
+            if (task instanceof Promise)
+                unresolved.push(task);
+
+            return unresolved;
+        }, []);
     }
 
     function FillHTML(template, data, options = defaultOptions, baseArray = null, baseObject = null) {
@@ -280,12 +316,6 @@ var Modstache = function() {
         });
 
         return dom;
-    }
-
-    function FillElements(elements, data, options = defaultOptions, baseArray = null, baseObject = null, parentContext = null) {
-        elements.forEach((element) => {
-            FillDOM(element, data, options, baseArray, baseObject, parentContext);
-        });
     }
 
     function ProcessDirective(directive, dom, value, propDetail, options, processed, status) {
@@ -583,6 +613,7 @@ var Modstache = function() {
         }
 
         let template = GetTemplate(context, model);
+        let isDefaultTemplate = template === context.template; // custom templates may not be detected when finished adding to the DOM
 
         setterBucket = new Set();
 
@@ -593,21 +624,71 @@ var Modstache = function() {
             template = template.cloneNode(true);
         }
 
-        let elements = null;
-        
-        if (template instanceof DocumentFragment)
-            elements = [...template.children];
+        let setterBucketLoaded;
 
-        parent.insertBefore(template, nextElement);
-        if (elements)
-            FillElements(elements, model, context.options, context.proxy, context.base, context.parentContext);
-        else
-            FillDOM(template, model, context.options, context.proxy, context.base, context.parentContext);
+        if (false) {
+            // may need to wait until everything is added to the DOM
+            // Situation: template used in array, onclick pass through in custom control was not working
+            // Solution: specifying async for functions has resolved particular case, but may just slow down processing enough to work instead of working in all cases
+            setterBucketLoaded = fillWhenLoaded(parent, template, setterBucket, isDefaultTemplate, (setBucket) => {
+                setterBucket = setBucket;
+                FillDOM(template, model, context.options, context.proxy, context.base, context.parentContext);
+                setterBucket = null;
+            });
 
-        let result = { e: elements ?? template, s: setterBucket };
+            fillTasks = RemoveResolvedTasks(fillTasks);
+            fillTasks.push(setterBucketLoaded);
+
+            parent.insertBefore(template, nextElement);
+            //let e = FillDOM(template, model, context.options, context.proxy, context.base, context.parentContext);
+            //let e = template;
+            //parent.insertBefore(e, nextElement);
+            //console.log('inserted ' + e);
+        }
+        else {
+            let e = FillDOM(template, model, context.options, context.proxy, context.base, context.parentContext);
+            parent.insertBefore(e, nextElement);
+         }
+
+        let result = { e: template, s: setterBucketLoaded };
         setterBucket = null; // fragment processing is finished - so don't accumulate more setters
 
         return result;
+    }
+
+    function fillWhenLoaded(parent, fragment, setBucket, verifyAdd, fillFunc) {
+        return new Promise((resolve, reject) => {
+            let timeout = setTimeout(() => { // resolve on timeout
+                fillFunc(setBucket);
+                observer.disconnect();
+                resolve(setBucket); }, 50); 
+            const observer = new MutationObserver(function (mutationsList, observer) {
+                // Loop through the mutations
+                for (let mutation of mutationsList) {
+                    // Check if nodes were added to the DOM
+                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                        if (!verifyAdd || IsFragmentLoaded(fragment, mutation.addedNodes)) {
+                            clearTimeout(timeout);
+                            fillFunc(setBucket);
+                            observer.disconnect();
+
+                            resolve(setBucket);
+                        }
+                    }
+                }
+            });
+
+            observer.observe(parent, { childList: true, subtree: true });
+        })
+    }
+
+    function IsFragmentLoaded(fragment, added) {
+        for (let addedNode of added) {
+            if (fragment.contains(addedNode)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function GetTemplate(context, model) {
@@ -618,7 +699,7 @@ var Modstache = function() {
             let detail = GetPropertyDetail(model, model, specifier, null);
             if (detail) {
                 let t = detail.parent[detail.propertyName];
-                if (t instanceof DocumentFragment || t.constructor === String)
+                if (t instanceof DocumentFragment || t instanceof String)
                     return t;
             }
         }
@@ -663,26 +744,11 @@ var Modstache = function() {
         }
 
         if (context.elementCount > 0 && context.elementCount === elements.length) { // add placeholder
-            if (Array.isArray(elements[0].e)) {
-                elements[0].e.forEach(element => {
-                    context.parent.insertBefore(context.placeholder, element);
-
-                });
-            }
-            else {
-                context.parent.insertBefore(context.placeholder, elements[0].e);
-            }
+            context.parent.insertBefore(context.placeholder, elements[0].e);
         }
 
         elements.forEach((e) => {
-            if (Array.isArray(e.e)) {
-                e.e.forEach(element => {
-                    context.parent.removeChild(element);
-                });
-            }
-            else {
-                context.parent.removeChild(e.e);
-            }
+            context.parent.removeChild(e.e);
             RemoveReactiveAssignments(e.s);
         });
 
@@ -696,7 +762,7 @@ var Modstache = function() {
         else {
             for (; start < context.elements.length; start++) {
                 if (context.elements[start])
-                    return (Array.isArray(context.elements[start].e)) ? context.elements[start].e[0] : context.elements[start].e;
+                    return context.elements[start].e;
             }
         }
 
@@ -934,20 +1000,37 @@ var Modstache = function() {
     }
 
     function RemoveReactiveAssignments(setters) {
-        setters?.forEach((descriptor) => {
-            let propertySetters = descriptor.p;
-            propertySetters.delete(descriptor.s);
-        });
-}
+        if (setters) {
+            if (setters instanceof Promise) {
+                setters.then((resolvedSetters) => RemoveReactiveAssignments(resolvedSetters));
+            }
+            else {
+                setters.forEach((descriptor) => {
+                    let propertySetters = descriptor.p;
+                    propertySetters.delete(descriptor.s);
+                });
+            }
+        }
+        //setters.clear();
+    }
 
     function RestoreReactiveAssignments(setters) {
-        setters?.forEach((descriptor) => {
-            let propertySetters = descriptor.p;
-            propertySetters.add(descriptor.s);
-        });
-}
+        if (setters) {
+            if (setters instanceof Promise) {
+                setters.then((resolvedSetters) => RestoreReactiveAssignments(resolvedSetters));
+            }
+            else {
+                setters.forEach((descriptor) => {
+                    let propertySetters = descriptor.p;
+                    propertySetters.add(descriptor.s);
+                });
+            }
+        }
+    }
 
     exports.fill = Fill;
+    exports.fillAsync = FillAsync;
+    exports.complete = Complete;
     exports.fillHTML = FillHTML;
     exports.fillDOM = FillDOM;
     exports.options = SetDefaultOptions;

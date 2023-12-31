@@ -206,7 +206,7 @@ test('Test with array', async function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    await _M_.fill(template.content, data, { removeStache: true });
+    await _M_.fillAsync(template.content, data, { removeStache: true });
 
     var result = template.innerHTML;
     var expected = '<div><div>One</div><div>Two</div></div>'
@@ -219,7 +219,7 @@ test('Test with child array', async function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    await _M_.fill(template.content, data, { removeStache: true });
+    await _M_.fillAsync(template.content, data, { removeStache: true });
 
     var result = template.innerHTML;
     var expected = '<div><div>Parent:One</div><div>Two</div></div>'
@@ -232,8 +232,9 @@ test('Test with array push', async function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    await _M_.fill(template.content, data, { removeStache: true });
+    await _M_.fillAsync(template.content, data, { removeStache: true });
     data.text.push({ text: 'Three' });
+    await _M_.complete();
     var result = template.innerHTML;
     var expected = '<div><div>One</div><div>Two</div><div>Three</div></div>'
     assert.deepEqual(result, expected);
@@ -245,8 +246,9 @@ test('Test with array unshift', async function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    await _M_.fill(template.content, data, { removeStache: true });
+    await _M_.fillAsync(template.content, data, { removeStache: true });
     data.text.unshift({ text: 'Three' });
+    await _M_.complete();
     var result = template.innerHTML;
     var expected = '<div><div>Three</div><div>One</div><div>Two</div></div>'
     assert.deepEqual(result, expected);
@@ -258,8 +260,9 @@ test('Test with array splice', async function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    await _M_.fill(template.content, data, { removeStache: true });
+    await _M_.fillAsync(template.content, data, { removeStache: true });
     data.text.splice(1,1,{ text: 'Three' },{ text: 'Four' });
+    await _M_.complete();
     var result = template.innerHTML;
     var expected = '<div><div>One</div><div>Three</div><div>Four</div></div>'
     assert.deepEqual(result, expected);
@@ -271,8 +274,9 @@ test('Test with array pop', async function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    await _M_.fill(template.content, data, { removeStache: true });
+    await _M_.fillAsync(template.content, data, { removeStache: true });
     data.text.pop();
+    await _M_.complete();
     var result = template.innerHTML;
     var expected = '<div><div>One</div></div>'
     assert.deepEqual(result, expected);
@@ -284,8 +288,9 @@ test('Test with array shift', async function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    await _M_.fill(template.content, data, { removeStache: true });
+    await _M_.fillAsync(template.content, data, { removeStache: true });
     data.text.shift();
+    await _M_.complete();
     var result = template.innerHTML;
     var expected = '<div><div>Two</div></div>'
     assert.deepEqual(result, expected);
@@ -297,8 +302,9 @@ test('Test with array index assignment', async function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    await _M_.fill(template.content, data, { removeStache: true });
+    await _M_.fillAsync(template.content, data, { removeStache: true });
     data.text[1] = { text: "abc" };
+    await _M_.complete();
     var result = template.innerHTML;
     var expected = '<div><div>One</div><div>abc</div></div>'
     assert.deepEqual(result, expected);
@@ -310,7 +316,7 @@ test('Test with array index swap', async function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    await _M_.fill(template.content, data, { removeStache: true });
+    await _M_.fillAsync(template.content, data, { removeStache: true });
     let tmp = data.text[1];
     data.text[1] = data.text[0];
     data.text[0] = tmp;
@@ -338,7 +344,7 @@ test('Test with array length assignment', async function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    await _M_.fill(template.content, data, { removeStache: true });
+    await _M_.fillAsync(template.content, data, { removeStache: true });
     data.text.length = 1;
     var result = template.innerHTML;
     var expected = '<div><div>One</div></div>'
@@ -357,7 +363,7 @@ test('Test with array modified template', async function (assert) {
     template.innerHTML = html;
     template1.innerHTML = html1;
     template2.innerHTML = html2;
-    await _M_.fill(template.content, data, { removeStache: true });
+    await _M_.fillAsync(template.content, data, { removeStache: true });
     var result = template.innerHTML;
     var expected = '<div><div>Template One</div><div>Template Two</div></div>'
     assert.deepEqual(result, expected);
@@ -369,7 +375,7 @@ test('Test with array mustache replacement', async function (assert) {
     var template = document.createElement("template");
 
     template.innerHTML = html;
-    await _M_.fill(template.content, data, { removeStache: true });
+    await _M_.fillAsync(template.content, data, { removeStache: true });
 
     var result = template.innerHTML;
     var expected = '<div><div>One</div><div>Two</div></div>'
