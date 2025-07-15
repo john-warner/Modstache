@@ -99,6 +99,7 @@ var ModstacheExample = function() {
         SortTest();
         TemplateTest();
         TemplateTestEmbedded();
+        IfTest();
      }
 
     function PopulateHead() {
@@ -251,6 +252,19 @@ var ModstacheExample = function() {
             messages: [{ message: 'Hello2', template: template }]
         };
         _M_.fill(templatetest, model, { removeStache: true })
+    }
+
+    function IfTest() {
+        let ifdom = $$.find("#ifTest");
+        let model = {
+            toggleVisible1: ({ root }, e) => () => { model.count1++; model.show1 = e.checked; },
+            toggleVisible2: ({ root }, e) => () => { model.show2 = e.checked; model.count2++; } ,
+            show1: () => false,
+            count1: 0,
+            show2: () => false,
+            count2: 0
+        };
+        _M_.fill(ifdom, model, { removeStache: true })
     }
 
     return {
