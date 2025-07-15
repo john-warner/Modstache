@@ -1,5 +1,11 @@
 # Modstache Change Log
 
+
+### 2025-7-8 - Version 1.2.0
+
+Added support for reactive {if} directive
+Use comment for array placeholder
+
 ### 2023-9-2 - Version 1.1.5
 
 Fixed problem with detecting string template
