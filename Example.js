@@ -97,6 +97,8 @@ var ModstacheExample = function() {
         SetupForm2();
         RootChangeTest();
         SortTest();
+        TemplateTest();
+        TemplateTestEmbedded();
      }
 
     function PopulateHead() {
@@ -231,6 +233,24 @@ var ModstacheExample = function() {
         };
         let sorttest = $$.bind("#sorttest");
         _M_.fill(sorttest, model, { removeStache: true })
+    }
+
+    function TemplateTest() {
+        let template = $$.find("#testTemplate")?.content;
+        let templatetest = $$.find("#templatetest");
+        let model = {
+            messages: [{ message: 'Hello', template: template }]
+        };
+        _M_.fill(templatetest, model, { removeStache: true })
+    }
+
+    function TemplateTestEmbedded() {
+        let template = $$.find("#testTemplateEm")?.innerHTML;
+        let templatetest = $$.find("#templatetestembedded");
+        let model = {
+            messages: [{ message: 'Hello2', template: template }]
+        };
+        _M_.fill(templatetest, model, { removeStache: true })
     }
 
     return {

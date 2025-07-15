@@ -106,5 +106,17 @@
             </tbody>
         </table>
     </div>
+    <div id="templatetest">
+        <template id="testTemplate">
+            <div>Message <span {}="message"></span></div>
+        </template>
+        <div {}="messages;{template}:template"></div>
+    </div>
+    <div id="templatetestembedded">
+        <template id="testTemplateEm">
+            <div>Stached Message {{message}}</div>
+        </template>
+        <div {}="messages;{template}:template"></div>
+    </div>
 </body>
 </html>

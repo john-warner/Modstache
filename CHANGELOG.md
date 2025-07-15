@@ -1,5 +1,10 @@
 # Modstache Change Log
 
+### 2023-9-2 - Version 1.1.5
+
+Fixed problem with detecting string template
+Fixed problem with removing template elements from array
+
 ### 2022-10-1 - Version 1.1.4
 
 Bug fix for assigning property with no getter
