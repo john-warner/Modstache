@@ -13,7 +13,7 @@ var Modstache = function() {
 
     'use strict';
 
-    let version = '1.1.5';
+    let version = '1.2.0';
   
     let exports = { version: version };
     let defaultOptions = {
@@ -29,11 +29,11 @@ var Modstache = function() {
             oninit: null,
             onremoved: null,
             onupdated: null
-        }
+        },
+        remove: false // remove element
     };
     const DisableReactiveAssignment = '-';
     const EnableReactiveAssignment = '+';
-    const PlaceholderTag = 'slot';
     const Directives = {
         if: '{if}',
         root: '{root}', // change root data object for descendants
@@ -275,6 +275,10 @@ var Modstache = function() {
                     if (activeOptions.events.oninit) {
                         activeOptions.events.oninit(e);
                     }
+                    if (activeOptions.remove) {
+                        if (e.parentNode)
+                            e.parentNode.removeChild(e);
+                    }
                 }
             }
         });
@@ -309,11 +313,40 @@ var Modstache = function() {
     }
 
     function processIfDirective(dom, value, propDetail, options, processed, status) {
-        let shown = GetDataValue(value, dom, GetStacheContext(dom,propDetail,options));
-        if (!shown) { // remove dom and 
+        let shown = GetDataValue(value, dom, GetStacheContext(dom, propDetail, options));
+        let placeholder = null;
+
+        if (!shown && !options.reactive)
+        {
             RemoveElement(dom, processed, options);
             status.removed = true;
-       }
+            return;
+        }
+
+        placeholder = document.createComment('_M_');
+        if (dom.parentNode) {
+            dom.parentNode.insertBefore(placeholder, dom);
+        }
+
+        // Initial show/hide
+        if (!shown) {
+            options.remove = true; // remove after processing
+        }
+
+        // Add reactive setter if enabled
+        if (options.reactive && propDetail) {
+            ChangeSetter(propDetail, (v) => {
+                v = GetDataValue(v, dom, GetStacheContext(dom, propDetail, options));
+                if (v && !dom.parentNode) {
+                    // Restore element
+                    placeholder.parentNode.insertBefore(dom, placeholder.nextSibling);
+                } else if (!v && dom.parentNode) {
+                    // Remove element
+                    dom.parentNode.removeChild(dom);
+                }
+                return v;
+            }, dom);
+        }
     }
 
     function processRootDirective(dom, value, propDetail, options, processed, status) {
@@ -515,7 +548,7 @@ var Modstache = function() {
             propDetail.parent[propDetail.propertyName] = proxy = GetFilledProxy(context, models); // repace array with proxy
             context.proxy = proxy;
         }
-        context.placeholder = document.createElement(PlaceholderTag); // slot element won't affect layout
+        context.placeholder = document.createComment('_M_ array');
         if (models.length > 0) {
             context.elementCount = Hydrate(context, models, element, createdElements);
         }

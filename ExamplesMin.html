@@ -74,11 +74,59 @@
     <div id="message"></div>
     <div id="time"></div>
     <div id="options"></div>
+    <div id="ifTest" style="margin-top:10px;margin-bottom: 10px;border-top: 1px solid black;border-bottom: 1px solid black">
+        <div>
+            <input id="show1" type="checkbox" {}="onchange:toggleVisible1" /><label for="show1">Show first message</label>&nbsp;&nbsp;
+            <input id="show2" type="checkbox" {}="onchange:toggleVisible2" /><label for="show2">Show second message</label>
+        </div>
+        <div style="padding-left:5px;">
+            <div {}="{if}:show1">This is the first message <span {}="count1"></span></div>
+            <div {}="{if}:show2">This is the second message <span {}="count2"></span></div>
+        </div>
+    </div>
     <div id="form">
         Form changes can update properties: <input {}="value:message;onchange:value>message" type="text" value="Hello"><span {}="message"></span>
     </div>
     <div id="form2">
         Form changes can call a function: <input {}="value:message;onchange:value>procMessage" type="text" value="Hello"><span {}="message"></span>
+    </div>
+    <div id="roottest" >
+        Root change test:
+        <div>
+            Base object message: <span {}="message">Unprocessed Message</span>
+        </div>
+        <div {}="{root}:roottest">
+            Root object can be changed for child elements: <span {}="message">Unprocessed Message</span>
+        </div>
+    </div>
+    <div id="sorttest">
+        Sort test (click on header to sort):
+        <table border="1">
+            <thead>
+                <tr>
+                    <th {}="onclick:sortById">Id</th>
+                    <th {}="onclick:sortByName">Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr {}="sortList">
+                    <td {}="id"></td>
+                    <td {}="name"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div id="templatetest">
+        <template id="testTemplate">
+            <div>Message <span {}="message"></span></div>
+        </template>
+        <div {}="messages;{template}:template"></div>
+    </div>
+    <div id="templatetestembedded">
+        <template id="testTemplateEm">
+            <div>Stached Message {{message}}</div>
+        </template>
+        <div {}="messages;{template}:template"></div>
     </div>
 </body>
 </html>

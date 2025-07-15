@@ -80,6 +80,16 @@
     <div id="form2">
         Form changes can call a function: <input {}="value:message;onchange:value>procMessage" type="text" value="Hello"><span {}="message"></span>
     </div>
+    <div id="ifTest" style="margin-top:10px;margin-bottom: 10px;border-top: 1px solid black;border-bottom: 1px solid black">
+        <div>
+            <input id="show1" type="checkbox" {}="onchange:toggleVisible1" /><label for="show1">Show first message</label>&nbsp;&nbsp;
+            <input id="show2" type="checkbox" {}="onchange:toggleVisible2" /><label for="show2">Show second message</label>
+        </div>
+        <div style="padding-left:5px;">
+            <div {}="{if}:show1">This is the first message <span {}="count1"></span></div>
+            <div {}="{if}:show2">This is the second message <span {}="count2"></span></div>
+        </div>
+    </div>
     <div id="roottest" >
         Root change test:
         <div>
